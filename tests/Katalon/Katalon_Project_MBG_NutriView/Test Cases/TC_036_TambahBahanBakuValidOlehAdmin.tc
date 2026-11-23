@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_036_TambahBahanBakuValidOlehAdmin</description>
+   <name>TC_036_TambahBahanBakuValidOlehAdmin</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>d0d1aa91-2f6e-40ca-90bf-f89c7a638c16</testCaseGuid>
+</TestCaseEntity>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transparansi Menu MBG — Orang Tua &amp; Guru (Prototipe UI/UX)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ========================================================================
+       DESIGN TOKENS — FOTO 1 (Sistem Visual) + FOTO 2 (Ritme Editorial)
+       Grid dasar: 6px | Max width: 1140px | Rasio Tipografi: 1.5 | Pill: 50px
+       ======================================================================== */
+    :root {
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --border: #CBD5E1;
+      --canvas: #F7F8FC;
+      --surface: #FFFFFF;
+
+      /* Status fungsional (WCAG AA compliant, solid, tanpa neon/gradasi) */
+      --status-ok-bg: #ECFDF5;
+      --status-ok-text: #065F46;
+      --status-ok-border: #A7F3D0;
+      --status-late-bg: #FFFBEB;
+      --status-late-text: #92400E;
+      --status-late-border: #FDE68A;
+      --status-err-bg: #FEF2F2;
+      --status-err-text: #991B1B;
+      --status-err-border: #FECACA;
+
+      /* Skala Spacing Berbasis 6px */
+      --sp-1: 6px;
+      --sp-2: 12px;
+      --sp-3: 18px;
+      --sp-4: 24px;
+      --sp-6: 36px;
+      --sp-8: 48px;
+      --sp-12: 72px;
+
+      /* Skala Tipografi Rasio 1.5 (dasar 16px) */
+      --text-micro: 11px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-h3: 24px;
+      --text-h2: 36px;
+      --text-h1: 54px;
+
+      --radius-pill: 50px;
+      --radius-sm: 6px;
+      --container: 1140px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--canvas);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-size: var(--text-base);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: var(--ink); text-decoration: none; }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: var(--text-base);
+      color: var(--ink);
+    }
+
+    .container {
+      width: 100%;
+      max-width: var(--container);
+      margin: 0 auto;
+      padding: 0 var(--sp-3);
+    }
+
+    @media (min-width: 768px) {
+      .container { padding: 0 var(--sp-4); }
+    }
+
+    /* Tipografi Editorial */
+    .label-caps {
+      font-size: var(--text-micro);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .index-num {
+      font-size: var(--text-micro);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .display-title {
+      font-size: clamp(36px, 6vw, var(--text-h1));
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+    }
+
+    .section-title {
+      font-size: clamp(24px, 3.5vw, var(--text-h2));
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+    }
+
+    .sub-title {
+      font-size: var(--text-h3);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    /* Tombol & Chip Pill (Radius 50px, Target Sentuh Min 44px) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-1);
+      min-height: 44px;
+      padding: 0 var(--sp-4);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: var(--surface);
+    }
+    .btn-primary:hover { background-color: var(--accent-hover); }
+
+    .btn-outline {
+      background-color: var(--surface);
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { border-color: var(--ink); }
+
+    .btn:focus-visible, .chip:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 var(--sp-3);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      background-color: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .chip[aria-pressed="true"], .chip.active {
+      background-color: var(--accent);
+      color: var(--surface);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .status-ok   { background: var(--status-ok-bg); color: var(--status-ok-text); border-color: var(--status-ok-border); }
+    .status-late { background: var(--status-late-bg); color: var(--status-late-text); border-color: var(--status-late-border); }
+    .status-err  { background: var(--status-err-bg); color: var(--status-err-text); border-color: var(--status-err-border); }
+    .status-info { background: var(--canvas); color: var(--ink); border-color: var(--border); }
+
+    /* Top Bar & Index Navigation */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-2);
+      min-height: 66px;
+      flex-wrap: wrap;
+      padding: var(--sp-2) 0;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .nav-index {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-1);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .nav-tab:hover { color: var(--ink); background: var(--canvas); }
+    .nav-tab.active {
+      color: var(--ink);
+      border-color: var(--ink);
+      background: var(--surface);
+    }
+
+    /* Bar Kontrol State Uji (Khusus Preview Prototipe) */
+    .state-toolbar {
+      background: var(--canvas);
+      border-bottom: 1px solid var(--border);
+      padding: var(--sp-2) 0;
+    }
+
+    .state-toolbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+    }
+
+    /* ========================================================================
+       HERO EDITORIAL + SATU POLA GRAFIS TIPIS (HANYA SEKALI DI HALAMAN)
+       ======================================================================== */
+    .hero-band {
+      background: var(--accent);
+      color: var(--surface);
+      border-bottom: 1px solid var(--accent-hover);
+      padding: var(--sp-8) 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      .hero-band { padding: var(--sp-12) 0 var(--sp-8); }
+    }
+
+    .hero-band .display-title { color: var(--surface); }
+    .hero-band .label-caps { color: rgba(255, 255, 255, 0.85); }
+    .hero-band .index-num { color: var(--surface); }
+    .hero-optical-svg {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      opacity: 0.9;
+    }
+    @media (max-width: 767px) {
+      .hero-optical-svg { opacity: 0.16; right: -56px; }
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--sp-6);
+      align-items: end;
+    }
+
+    @media (min-width: 900px) {
+      .hero-grid { grid-template-columns: 1.35fr 0.65fr; }
+    }
+
+    /* Satu-satunya pola grafis garis biru tipis (terinspirasi Foto 2) */
+    .optical-accent {
+      height: 84px;
+      width: 100%;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(37, 99, 235, 0.16) 0px,
+        rgba(37, 99, 235, 0.16) 1.5px,
+        transparent 1.5px,
+        transparent 8px
+      );
+    }
+
+    /* Layout Grid Editorial (Tanpa Kartu Berbayang di Mana-Mana) */
+    .main-area {
+      padding: var(--sp-6) 0 var(--sp-12);
+      flex: 1;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .section-block {
+      padding: var(--sp-6) 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-block:last-child { border-bottom: none; }
+
+    .grid-12 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--sp-4);
+    }
+
+    @media (min-width: 840px) {
+      .grid-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-6); }
+      .col-4 { grid-column: span 4; }
+      .col-5 { grid-column: span 5; }
+      .col-7 { grid-column: span 7; }
+      .col-8 { grid-column: span 8; }
+      .col-12 { grid-column: span 12; }
+    }
+
+    /* Surface datar hanya untuk blok pemisah fungsional */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: var(--sp-4);
+    }
+
+    /* Daftar Menu & Nutrisi bergaya tabel editorial */
+    .ledger-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--sp-2);
+      padding: var(--sp-2) 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ledger-row:last-child { border-bottom: none; }
+
+    .nutrition-strip {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    @media (min-width: 640px) {
+      .nutrition-strip { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .nutrition-cell {
+      padding: var(--sp-3);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    @media (min-width: 640px) {
+      .nutrition-cell { border-bottom: none; }
+      .nutrition-cell:last-child { border-right: none; }
+    }
+
+    /* Foto Dapur/Makanan Full-Width dengan Sedikit Tint Biru (Foto 2) */
+    .editorial-photo-wrap {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      background: #E2E8F0;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      padding: var(--sp-3);
+    }
+
+    .editorial-photo-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(37, 99, 235, 0.14);
+      pointer-events: none;
+    }
+
+    /* Timeline Perjalanan Makanan (6 Tahap Vertikal Terhubung) */
+    .timeline {
+      position: relative;
+      padding-left: var(--sp-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 10px;
+      bottom: 10px;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .tl-item {
+      position: relative;
+      padding-bottom: var(--sp-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tl-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .tl-dot {
+      position: absolute;
+      left: -30px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+    }
+
+    .tl-item.done .tl-dot { background: var(--accent); border-color: var(--accent); }
+    .tl-item.late .tl-dot { background: #D97706; border-color: #D97706; }
+
+    /* Form & Checkbox Aksesibel (Min 44px) */
+    .check-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-2);
+      min-height: 48px;
+      padding: var(--sp-2) 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .check-row input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .field-input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: var(--text-sm);
+    }
+
+    /* Skeleton Loading */
+    .skeleton-line {
+      height: 16px;
+      background: #E2E8F0;
+      margin-bottom: 12px;
+    }
+
+    .footer {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      padding: var(--sp-4) 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- TOPBAR & NAVIGASI INDEKS (01 - 04) -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand-mark">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>Transparansi MBG</span>
+      </div>
+
+      <nav class="nav-index" aria-label="Navigasi Layar Utama">
+        <button class="nav-tab active" data-screen="beranda" onclick="switchScreen('beranda')">
+          <span class="index-num">01</span> Beranda Orang Tua
+        </button>
+        <button class="nav-tab" data-screen="menu" onclick="switchScreen('menu')">
+          <span class="index-num">02</span> Detail Menu
+        </button>
+        <button class="nav-tab" data-screen="perjalanan" onclick="switchScreen('perjalanan')">
+          <span class="index-num">03</span> Perjalanan Makanan
+        </button>
+        <button class="nav-tab" data-screen="guru" onclick="switchScreen('guru')">
+          <span class="index-num">04</span> Dasbor Guru
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- SIMULATOR 5 STATE WAJIB (Untuk verifikasi desain interaktif) -->
+  <div class="state-toolbar">
+    <div class="container state-toolbar-inner">
+      <span class="label-caps">Uji State Antarmuka (Contoh Data)</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <button class="chip active" data-state="sukses" onclick="setAppState('sukses')">Sukses (Diterima)</button>
+        <button class="chip" data-state="terlambat" onclick="setAppState('terlambat')">Terlambat</button>
+        <button class="chip" data-state="kosong" onclick="setAppState('kosong')">Kosong</button>
+        <button class="chip" data-state="loading" onclick="setAppState('loading')">Loading</button>
+        <button class="chip" data-state="error" onclick="setAppState('error')">Error Koneksi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO EDITORIAL COBALT (#2563EB) + SATU POLA GARIS OPTIK SWISS -->
+  <section class="hero-band">
+    <svg class="hero-optical-svg" width="380" height="320" viewBox="0 0 380 320" fill="none" aria-hidden="true">
+      <defs>
+        <pattern id="proto-lines-a" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#FFFFFF" stroke-width="1.6" stroke-opacity="0.72" />
+        </pattern>
+        <pattern id="proto-lines-b" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#FFFFFF" stroke-width="1.6" stroke-opacity="0.5" />
+        </pattern>
+      </defs>
+      <circle cx="150" cy="100" r="76" fill="url(#proto-lines-a)" />
+      <circle cx="268" cy="100" r="76" fill="url(#proto-lines-b)" />
+      <circle cx="150" cy="218" r="76" fill="url(#proto-lines-b)" />
+      <circle cx="268" cy="218" r="76" fill="url(#proto-lines-a)" />
+    </svg>
+    <div class="container hero-grid" style="position:relative;z-index:2;">
+      <div>
+        <div class="label-caps" style="margin-bottom:12px;">
+          <span class="index-num" id="hero-index">01</span> &nbsp;/&nbsp; <span id="hero-kicker">SDN 3 UJUNG LARE &middot; KAMIS, 19 NOVEMBER 2026</span>
+        </div>
+        <h1 class="display-title" id="hero-title">Menu Hari Ini.<br />Terpantau.</h1>
+      </div>
+      <div>
+        <p style="font-size:15px;color:rgba(255,255,255,0.88);max-width:460px;line-height:1.6;">
+          Informasi menu, kandungan gizi, dan bukti pengolahan makanan anak Anda dari dapur SPPG hingga ruang kelas.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KONTEN UTAMA -->
+  <main class="main-area">
+    <div class="container">
+
+      <!-- STATE: LOADING -->
+      <div id="state-loading" class="panel hidden" role="status" aria-live="polite">
+        <div class="label-caps" style="margin-bottom:18px;">Memuat data menu &amp; status pengiriman...</div>
+        <div class="skeleton-line" style="width:45%;height:28px;"></div>
+        <div class="skeleton-line" style="width:85%;"></div>
+        <div class="skeleton-line" style="width:70%;"></div>
+        <div class="skeleton-line" style="width:60%;"></div>
+      </div>
+
+      <!-- STATE: ERROR KONEKSI -->
+      <div id="state-error" class="panel hidden" role="alert">
+        <span class="status-pill status-err" style="margin-bottom:12px;">
+          <svg class="icon" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/></svg>
+          Koneksi terputus
+        </span>
+        <h2 class="sub-title" style="margin-bottom:6px;">Gagal memuat data menu hari ini.</h2>
+        <p style="font-size:14px;color:var(--muted);margin-bottom:18px;max-width:520px;">
+          Periksa sambungan internet ponsel Anda lalu coba muat ulang. Data menu dan riwayat pengiriman tidak hilang.
+        </p>
+        <button class="btn btn-primary" onclick="setAppState('sukses')">Coba Lagi</button>
+      </div>
+
+      <!-- STATE: KOSONG -->
+      <div id="state-kosong" class="panel hidden">
+        <span class="status-pill status-info" style="margin-bottom:12px;">Belum ada jadwal saji</span>
+        <h2 class="sub-title" style="margin-bottom:6px;">Belum ada menu untuk hari ini.</h2>
+        <p style="font-size:14px;color:var(--muted);margin-bottom:18px;max-width:520px;">
+          Menu harian akan tampil setelah divalidasi oleh Ahli Gizi SPPG paling lambat pukul 06.00 WITA pada hari sekolah aktif.
+        </p>
+        <button class="btn btn-outline" onclick="setAppState('sukses')">Periksa Kembali</button>
+      </div>
+
+      <!-- WADAH LAYAR AKTIF (Saat state Sukses atau Terlambat) -->
+      <div id="screens-wrapper">
+
+        <!-- BANNER STATUS TERLAMBAT (Tampil otomatis saat state = terlambat) -->
+        <div id="banner-terlambat" class="panel hidden" style="margin-bottom:24px;border-color:var(--status-late-border);background:var(--status-late-bg);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div class="label-caps" style="color:var(--status-late-text);margin-bottom:6px;">Pemberitahuan Keterlambatan Pengiriman</div>
+              <div style="font-weight:700;font-size:16px;color:var(--ink);">Pengiriman ke SDN 3 Ujung Lare belum tiba pada jadwal 10.15 WITA.</div>
+              <p style="font-size:14px;color:var(--status-late-text);margin-top:4px;">
+                Estimasi tiba baru: <strong>10.40 WITA</strong> (kendala lalu lintas). Makanan masih berada dalam batas aman konsumsi 4 jam (maksimal 10.30–11.00 WITA).
+              </p>
+            </div>
+            <button class="btn btn-outline" onclick="switchScreen('perjalanan')">Lihat Tahap Pengiriman</button>
+          </div>
+        </div>
+
+        <!-- ================================================================
+             LAYAR 01: BERANDA ORANG TUA
+             ================================================================ -->
+        <section id="screen-beranda" class="screen active">
+          <!-- Pemilih Anak (Privasi ketat: hanya anak akun ini) -->
+          <div class="section-block" style="padding-top:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+              <div>
+                <div class="label-caps">Pilih Anak Anda (Contoh Data)</div>
+                <p style="font-size:13px;color:var(--muted);margin-top:4px;">Privasi terjaga: layar ini hanya menampilkan data anak terdaftar pada akun Anda.</p>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <button class="chip active" aria-pressed="true" onclick="selectChild(this, 'Raka Pratama', '2B', 'SDN 3 Ujung Lare')">Raka Pratama &middot; Kelas 2B</button>
+                <button class="chip" aria-pressed="false" onclick="selectChild(this, 'Nadia Putri', '5A', 'SDN 3 Ujung Lare')">Nadia Putri &middot; Kelas 5A</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ringkasan Menu Hari Ini & Status -->
+          <div class="section-block">
+            <div class="grid-12">
+              <div class="col-7">
+                <div class="label-caps" style="margin-bottom:6px;">
+                  <span class="index-num">01.1</span> &nbsp;MENU HARI INI &middot; <span id="child-meta">KELAS 2B &middot; SDN 3 UJUNG LARE</span>
+                </div>
+                <h2 class="section-title" style="margin-bottom:12px;">Nasi putih, ayam bakar bumbu kecap, dan tumis buncis wortel.</h2>
+                <p style="font-size:15px;color:var(--muted);margin-bottom:24px;">
+                  Dilengkapi pisang ambon dan susu UHT tawar. Dimasak pagi ini pukul 06.30 WITA di Dapur SPPG Ujung Lare.
+                </p>
+
+                <!-- SATU AKSI PALING MENONJOL DI LAYAR 01 -->
+                <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                  <button class="btn btn-primary" onclick="switchScreen('perjalanan')">
+                    <span>Lihat Perjalanan Makanan</span>
+                    <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
+                  </button>
+                  <button class="btn btn-outline" onclick="switchScreen('menu')">Rincian Gizi &amp; Bahan</button>
+                </div>
+              </div>
+
+              <div class="col-5">
+                <div class="panel">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:8px;flex-wrap:wrap;">
+                    <span class="label-caps">Status Pengantaran</span>
+                    <span id="beranda-status-pill" class="status-pill status-ok">Makanan sudah diterima &middot; 10.15</span>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="color:var(--muted);font-size:14px;">Energi per porsi (contoh data)</span>
+                    <strong class="tabular">615 kkal</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="color:var(--muted);font-size:14px;">Protein</span>
+                    <strong class="tabular">24 gram</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="color:var(--muted);font-size:14px;">Suhu saat pengiriman</span>
+                    <strong class="tabular">64 &deg;C</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="color:var(--muted);font-size:14px;">Sertifikat dapur</span>
+                    <strong>SLHS Aktif (2026)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             LAYAR 02: DETAIL MENU HARIAN
+             ================================================================ -->
+        <section id="screen-menu" class="screen">
+          <div class="section-block" style="padding-top:0;">
+            <div class="label-caps" style="margin-bottom:6px;"><span class="index-num">02</span> &nbsp;KOMPOSISI &amp; NILAI GIZI HARIAN (CONTOH DATA)</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px;margin-bottom:24px;">
+              <h2 class="section-title">Paket Makan Siang Kelas 2B.</h2>
+              <!-- SATU AKSI PALING MENONJOL DI LAYAR 02 -->
+              <button class="btn btn-primary" onclick="switchScreen('perjalanan')">
+                <span>Lacak Perjalanan Makanan</span>
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/></svg>
+              </button>
+            </div>
+
+            <!-- Strip Nilai Gizi 4 Kolom Tanpa Kartu Berbayang -->
+            <div class="nutrition-strip" style="margin-bottom:36px;">
+              <div class="nutrition-cell">
+                <div class="label-caps">Energi Total</div>
+                <div class="sub-title tabular" style="margin-top:6px;color:var(--accent);">615 kkal</div>
+              </div>
+              <div class="nutrition-cell">
+                <div class="label-caps">Protein</div>
+                <div class="sub-title tabular" style="margin-top:6px;">24 gram</div>
+              </div>
+              <div class="nutrition-cell">
+                <div class="label-caps">Karbohidrat</div>
+                <div class="sub-title tabular" style="margin-top:6px;">82 gram</div>
+              </div>
+              <div class="nutrition-cell">
+                <div class="label-caps">Lemak / Serat</div>
+                <div class="sub-title tabular" style="margin-top:6px;">18 / 7 gram</div>
+              </div>
+            </div>
+
+            <div class="grid-12">
+              <div class="col-7">
+                <div class="label-caps" style="margin-bottom:12px;">Rincian 5 Komponen Sajian (Total 450 gram)</div>
+                <div class="ledger-row">
+                  <div><strong>Nasi putih</strong><div style="font-size:13px;color:var(--muted);">Sumber karbohidrat &middot; Beras lokal terverifikasi</div></div>
+                  <strong class="tabular">150 gram</strong>
+                </div>
+                <div class="ledger-row">
+                  <div><strong>Ayam bakar bumbu kecap</strong><div style="font-size:13px;color:var(--muted);">Protein hewani &middot; Tanpa pengawet</div></div>
+                  <strong class="tabular">85 gram</strong>
+                </div>
+                <div class="ledger-row">
+                  <div><strong>Tumis buncis wortel</strong><div style="font-size:13px;color:var(--muted);">Sayuran segar &middot; Dimasak pukul 06.05 WITA</div></div>
+                  <strong class="tabular">75 gram</strong>
+                </div>
+                <div class="ledger-row">
+                  <div><strong>Pisang ambon</strong><div style="font-size:13px;color:var(--muted);">Buah segar utuh</div></div>
+                  <strong class="tabular">80 gram</strong>
+                </div>
+                <div class="ledger-row">
+                  <div><strong>Susu UHT tawar</strong><div style="font-size:13px;color:var(--muted);">Kemasan tersegel &middot; Kedaluwarsa Nov 2027</div></div>
+                  <strong class="tabular">125 ml</strong>
+                </div>
+              </div>
+
+              <div class="col-5">
+                <div class="panel">
+                  <div class="label-caps" style="margin-bottom:12px;">Bukti Kelayakan &amp; Keamanan Pangan</div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Sertifikat SLHS Dapur</span>
+                    <strong>No. 440/SLHS-04/2026</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Jam Selesai Masak</span>
+                    <strong class="tabular">06.30 WITA</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Suhu Boks Kirim</span>
+                    <strong class="tabular">64 &deg;C</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Pemasok Bahan</span>
+                    <strong>Terverifikasi (Data Pribadi Dilindungi)</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Catatan Alergen</span>
+                    <strong>Kedelai (kecap), Susu</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             LAYAR 03: TIMELINE PERJALANAN MAKANAN (6 TAHAP)
+             ================================================================ -->
+        <section id="screen-perjalanan" class="screen">
+          <div class="section-block" style="padding-top:0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px;margin-bottom:24px;">
+              <div>
+                <div class="label-caps" style="margin-bottom:6px;"><span class="index-num">03</span> &nbsp;JEJAK PROSES DARI HULU KE MEJA ANAK (CONTOH DATA)</div>
+                <h2 class="section-title">Perjalanan Makanan.</h2>
+              </div>
+              <!-- SATU AKSI PALING MENONJOL DI LAYAR 03 -->
+              <button class="btn btn-primary" onclick="refreshTimelineFeedback()">
+                <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Muat Ulang Status</span>
+              </button>
+            </div>
+
+            <div id="refresh-note" class="hidden" style="margin-bottom:18px;font-size:13px;color:var(--accent);font-weight:600;">
+              Status diperbarui pada 10.32 WITA.
+            </div>
+
+            <div class="grid-12">
+              <div class="col-8">
+                <div class="timeline" id="food-timeline">
+                  <div class="tl-item done">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">01. Belanja bahan</strong>
+                      <span class="status-pill status-ok">Selesai &middot; 04.15 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: Gudang Logistik Dapur SPPG &middot; Pemeriksaan kesegaran daging ayam, sayuran, dan nomor lot bahan baku.
+                    </p>
+                  </div>
+
+                  <div class="tl-item done">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">02. Pengolahan</strong>
+                      <span class="status-pill status-ok">Selesai &middot; 06.30 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: Dapur SPPG Ujung Lare &middot; Suhu matang inti 78 &deg;C, divalidasi penanggung jawab dapur bersertifikat SLHS.
+                    </p>
+                  </div>
+
+                  <div class="tl-item done">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">03. Pengemasan</strong>
+                      <span class="status-pill status-ok">Selesai &middot; 08.20 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: Dapur SPPG Ujung Lare &middot; Pemorsian 450 gram per kotak food-grade tertutup rapat untuk Kelas 2B.
+                    </p>
+                  </div>
+
+                  <div class="tl-item done" id="tl-kirim">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">04. Pengiriman</strong>
+                      <span class="status-pill status-ok" id="tl-kirim-badge">Selesai &middot; 09.40 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: Armada Distribusi SPPG &middot; Suhu boks termal saat berangkat 64 &deg;C.
+                    </p>
+                  </div>
+
+                  <div class="tl-item done" id="tl-terima">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">05. Diterima sekolah</strong>
+                      <span class="status-pill status-ok" id="tl-terima-badge">Diterima &middot; 10.15 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: SDN 3 Ujung Lare (Ruang Transit) &middot; Dikonfirmasi oleh Wali Kelas 2B dalam kondisi layak.
+                    </p>
+                  </div>
+
+                  <div class="tl-item done" id="tl-saji">
+                    <span class="tl-dot" aria-hidden="true"></span>
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                      <strong style="font-size:16px;">06. Disajikan</strong>
+                      <span class="status-pill status-ok" id="tl-saji-badge">Disajikan &middot; 10.30 WITA</span>
+                    </div>
+                    <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                      Lokasi umum: Ruang Kelas 2B SDN 3 Ujung Lare &middot; Masih di dalam batas konsumsi aman maksimal 4 jam pasca matang.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-4">
+                <div class="panel">
+                  <div class="label-caps" style="margin-bottom:12px;">Ringkasan Keamanan Waktu</div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Selesai masak</span>
+                    <strong class="tabular">06.30 WITA</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Batas konsumsi aman</span>
+                    <strong class="tabular">10.30 WITA</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Suhu kirim tercatat</span>
+                    <strong class="tabular">64 &deg;C</strong>
+                  </div>
+                  <p style="font-size:12px;color:var(--muted);margin-top:12px;">
+                    Alamat detail dapur dan data pribadi pemasok tidak ditampilkan demi privasi operasional.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             LAYAR 04: DASBOR GURU (HANYA KELAS YANG DIAMPU)
+             ================================================================ -->
+        <section id="screen-guru" class="screen">
+          <div class="section-block" style="padding-top:0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px;margin-bottom:24px;">
+              <div>
+                <div class="label-caps" style="margin-bottom:6px;"><span class="index-num">04</span> &nbsp;WALI KELAS 2B &middot; SDN 3 UJUNG LARE (CONTOH DATA)</div>
+                <h2 class="section-title">Penerimaan Kelas 2B.</h2>
+                <p style="font-size:14px;color:var(--muted);margin-top:6px;">
+                  Anda hanya melihat kelas yang Anda ampu. Tidak ada nama atau foto siswa kelas lain.
+                </p>
+              </div>
+              <!-- SATU AKSI PALING MENONJOL DI LAYAR 04 -->
+              <div style="display:flex;flex-wrap:wrap;gap:12px;">
+                <button class="btn btn-primary" onclick="confirmClassReceipt()">
+                  <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  <span>Konfirmasi Penerimaan Kelas</span>
+                </button>
+                <button class="btn btn-outline" onclick="toggleIssueBox()">Laporkan Kendala</button>
+              </div>
+            </div>
+
+            <div id="guru-success" class="panel hidden" style="margin-bottom:24px;border-color:var(--status-ok-border);background:var(--status-ok-bg);">
+              <strong style="color:var(--status-ok-text);">Penerimaan Kelas 2B dikonfirmasi (10.15 WITA).</strong>
+              <span style="font-size:14px;color:var(--status-ok-text);"> Status orang tua Kelas 2B otomatis diperbarui menjadi "Diterima sekolah".</span>
+            </div>
+
+            <!-- Form Lapor Kendala (Terbuka saat tombol ditekan) -->
+            <div id="guru-issue-box" class="panel hidden" style="margin-bottom:24px;">
+              <div class="label-caps" style="margin-bottom:12px;">Laporan Kendala Penerimaan &middot; Kelas 2B</div>
+              <div style="display:grid;gap:12px;max-width:560px;">
+                <div>
+                  <label for="jenis-kendala" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Jenis kendala</label>
+                  <select id="jenis-kendala" class="field-input">
+                    <option value="menu_tidak_sesuai">Menu tidak sesuai daftar harian</option>
+                    <option value="kurang_layak">Makanan kurang layak / bau / dingin</option>
+                    <option value="porsi_kurang">Jumlah porsi kurang dari 28 kotak</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="catatan-kendala" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Catatan singkat untuk dapur SPPG</label>
+                  <textarea id="catatan-kendala" rows="3" class="field-input" placeholder="Contoh: 2 kotak lauk ayam terlalu dingin saat dibuka pukul 10.20 WITA."></textarea>
+                </div>
+                <div>
+                  <button class="btn btn-primary" onclick="submitIssue()">Kirim Laporan Kendala</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-12">
+              <div class="col-7">
+                <div class="label-caps" style="margin-bottom:12px;">Daftar Cek Penerimaan Porsi Kelas 2B (28 Siswa &middot; Teranonimkan untuk Demo)</div>
+                <label class="check-row">
+                  <span><strong>Kelompok Absen 01–07</strong> &middot; 7 porsi diterima lengkap</span>
+                  <input type="checkbox" checked />
+                </label>
+                <label class="check-row">
+                  <span><strong>Kelompok Absen 08–14</strong> &middot; 7 porsi diterima lengkap</span>
+                  <input type="checkbox" checked />
+                </label>
+                <label class="check-row">
+                  <span><strong>Kelompok Absen 15–21</strong> &middot; 7 porsi diterima lengkap</span>
+                  <input type="checkbox" checked />
+                </label>
+                <label class="check-row">
+                  <span><strong>Kelompok Absen 22–28</strong> &middot; 7 porsi diterima lengkap</span>
+                  <input type="checkbox" checked />
+                </label>
+              </div>
+
+              <div class="col-5">
+                <div class="panel">
+                  <div class="label-caps" style="margin-bottom:12px;">Ringkasan Kelas 2B Hari Ini</div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Menu terjadwal</span>
+                    <strong>Ayam bakar kecap</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Target porsi kelas</span>
+                    <strong class="tabular">28 kotak</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Jam tiba dijadwalkan</span>
+                    <strong class="tabular">10.15 WITA</strong>
+                  </div>
+                  <div class="ledger-row">
+                    <span style="font-size:14px;color:var(--muted);">Suhu saat serah terima</span>
+                    <strong class="tabular">64 &deg;C</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <span>Sistem Transparansi Menu MBG &middot; SDN 3 Ujung Lare &amp; Dapur SPPG Ujung Lare</span>
+      <span>Angka pada pratinjau ini adalah contoh data realistis</span>
+    </div>
+  </footer>
+
+  <script>
+    const heroMap = {
+      beranda:    { idx: '01', kicker: 'SDN 3 UJUNG LARE · KAMIS, 19 NOVEMBER 2026', title: 'Menu Hari Ini.<br />Terpantau.' },
+      menu:       { idx: '02', kicker: 'RINCIAN GIZI & KOMPOSISI · KELAS 2B', title: 'Gizi Jelas.<br />Terukur.' },
+      perjalanan: { idx: '03', kicker: 'BELANJA HINGGA MEJA ANAK · 6 TAHAP', title: 'Proses Terbuka.<br />Terjaga.' },
+      guru:       { idx: '04', kicker: 'DASBOR WALI KELAS 2B · SDN 3 UJUNG LARE', title: 'Serah Terima.<br />Tercatat.' }
+    };
+
+    function switchScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.screen === name));
+      document.getElementById('hero-index').textContent = heroMap[name].idx;
+      document.getElementById('hero-kicker').textContent = heroMap[name].kicker;
+      document.getElementById('hero-title').innerHTML = heroMap[name].title;
+    }
+
+    function selectChild(btn, name, kelas, sekolah) {
+      btn.parentElement.querySelectorAll('.chip').forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      document.getElementById('child-meta').textContent = 'KELAS ' + kelas + ' · ' + sekolah.toUpperCase();
+    }
+
+    function setAppState(state) {
+      document.querySelectorAll('.state-toolbar .chip').forEach(c => c.classList.toggle('active', c.dataset.state === state));
+      ['state-loading', 'state-error', 'state-kosong', 'banner-terlambat'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+
+      const wrapper = document.getElementById('screens-wrapper');
+      if (state === 'loading' || state === 'error' || state === 'kosong') {
+        wrapper.classList.add('hidden');
+        document.getElementById('state-' + state).classList.remove('hidden');
+        return;
+      }
+
+      wrapper.classList.remove('hidden');
+      const isLate = state === 'terlambat';
+      document.getElementById('banner-terlambat').classList.toggle('hidden', !isLate);
+
+      const pill = document.getElementById('beranda-status-pill');
+      const tlKirim = document.getElementById('tl-kirim');
+      const tlTerima = document.getElementById('tl-terima');
+      const tlSaji = document.getElementById('tl-saji');
+
+      if (isLate) {
+        pill.className = 'status-pill status-late';
+        pill.textContent = 'Terlambat · Estimasi 10.40 WITA';
+        tlKirim.className = 'tl-item late';
+        document.getElementById('tl-kirim-badge').className = 'status-pill status-late';
+        document.getElementById('tl-kirim-badge').textContent = 'Dalam perjalanan (Terlambat)';
+        tlTerima.className = 'tl-item';
+        document.getElementById('tl-terima-badge').className = 'status-pill status-info';
+        document.getElementById('tl-terima-badge').textContent = 'Menunggu tiba (Jadwal 10.15)';
+        tlSaji.className = 'tl-item';
+        document.getElementById('tl-saji-badge').className = 'status-pill status-info';
+        document.getElementById('tl-saji-badge').textContent = 'Belum disajikan';
+      } else {
+        pill.className = 'status-pill status-ok';
+        pill.textContent = 'Makanan sudah diterima · 10.15';
+        tlKirim.className = 'tl-item done';
+        document.getElementById('tl-kirim-badge').className = 'status-pill status-ok';
+        document.getElementById('tl-kirim-badge').textContent = 'Selesai · 09.40 WITA';
+        tlTerima.className = 'tl-item done';
+        document.getElementById('tl-terima-badge').className = 'status-pill status-ok';
+        document.getElementById('tl-terima-badge').textContent = 'Diterima · 10.15 WITA';
+        tlSaji.className = 'tl-item done';
+        document.getElementById('tl-saji-badge').className = 'status-pill status-ok';
+        document.getElementById('tl-saji-badge').textContent = 'Disajikan · 10.30 WITA';
+      }
+    }
+
+    function refreshTimelineFeedback() {
+      const el = document.getElementById('refresh-note');
+      el.classList.remove('hidden');
+      el.textContent = 'Status diperbarui otomatis (' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA).';
+    }
+
+    function confirmClassReceipt() {
+      document.getElementById('guru-success').classList.remove('hidden');
+      document.getElementById('guru-issue-box').classList.add('hidden');
+    }
+
+    function toggleIssueBox() {
+      document.getElementById('guru-issue-box').classList.toggle('hidden');
+    }
+
+    function submitIssue() {
+      const box = document.getElementById('guru-issue-box');
+      box.innerHTML = '<strong style="color:var(--status-late-text);">Laporan kendala Kelas 2B terkirim ke Dapur SPPG.</strong><p style="font-size:14px;color:var(--muted);margin-top:6px;">Tim dapur dan Ahli Gizi telah menerima notifikasi tindak lanjut.</p>';
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_044_PencarianDanTambahMasterDataGiziOlehAhliGizi</description>
+   <name>TC_044_PencarianDanTambahMasterDataGiziOlehAhliGizi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>078b953f-0f08-42bc-98f3-e785c66a79d7</testCaseGuid>
+</TestCaseEntity>

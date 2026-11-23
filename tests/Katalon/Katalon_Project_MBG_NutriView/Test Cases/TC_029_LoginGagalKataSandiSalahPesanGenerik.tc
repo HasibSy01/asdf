@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_029_LoginGagalKataSandiSalahPesanGenerik</description>
+   <name>TC_029_LoginGagalKataSandiSalahPesanGenerik</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>49e2194b-225a-4e21-b856-3f867f93f93c</testCaseGuid>
+</TestCaseEntity>

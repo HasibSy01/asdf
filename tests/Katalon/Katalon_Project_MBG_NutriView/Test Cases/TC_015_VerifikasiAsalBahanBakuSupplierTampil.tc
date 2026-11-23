@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_015_VerifikasiAsalBahanBakuSupplierTampil</description>
+   <name>TC_015_VerifikasiAsalBahanBakuSupplierTampil</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>cb13d332-b120-4852-8580-4d142d58ae73</testCaseGuid>
+</TestCaseEntity>

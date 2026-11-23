@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_025_ScanQRCodeTokenTidakValidTampilPeringatan</description>
+   <name>TC_025_ScanQRCodeTokenTidakValidTampilPeringatan</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>b9bf8e98-ee7d-4ed1-8d26-a7e5c4ad4c36</testCaseGuid>
+</TestCaseEntity>

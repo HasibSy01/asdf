@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_001_BukaBerandaPortalPublikTanpaLogin</description>
+   <name>TC_001_BukaBerandaPortalPublikTanpaLogin</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>27243008-635a-47ad-a983-9d02fd8c8aaa</testCaseGuid>
+</TestCaseEntity>

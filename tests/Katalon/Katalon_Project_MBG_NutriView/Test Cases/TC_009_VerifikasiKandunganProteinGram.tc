@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_009_VerifikasiKandunganProteinGram</description>
+   <name>TC_009_VerifikasiKandunganProteinGram</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>1c08df2e-8217-4755-be89-e62c7686b592</testCaseGuid>
+</TestCaseEntity>

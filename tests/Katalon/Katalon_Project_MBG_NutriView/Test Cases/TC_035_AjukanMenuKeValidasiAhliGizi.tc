@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_035_AjukanMenuKeValidasiAhliGizi</description>
+   <name>TC_035_AjukanMenuKeValidasiAhliGizi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>3a49937b-1703-4a0c-a7f8-28be548fbc34</testCaseGuid>
+</TestCaseEntity>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_017_VerifikasiBadgeKategoriKomponenBahan</description>
+   <name>TC_017_VerifikasiBadgeKategoriKomponenBahan</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>7a4a6d56-8aba-4271-94ce-96d543745c86</testCaseGuid>
+</TestCaseEntity>

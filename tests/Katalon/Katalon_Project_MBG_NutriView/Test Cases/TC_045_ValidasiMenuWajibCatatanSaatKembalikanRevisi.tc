@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_045_ValidasiMenuWajibCatatanSaatKembalikanRevisi</description>
+   <name>TC_045_ValidasiMenuWajibCatatanSaatKembalikanRevisi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>02ad0751-b60b-4ebd-bd76-bdc9710dc9b1</testCaseGuid>
+</TestCaseEntity>

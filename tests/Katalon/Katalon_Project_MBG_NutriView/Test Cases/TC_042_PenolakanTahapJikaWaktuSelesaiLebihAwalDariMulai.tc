@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_042_PenolakanTahapJikaWaktuSelesaiLebihAwalDariMulai</description>
+   <name>TC_042_PenolakanTahapJikaWaktuSelesaiLebihAwalDariMulai</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>7cae2a3a-6a0c-45f8-8281-12395d9cd69e</testCaseGuid>
+</TestCaseEntity>

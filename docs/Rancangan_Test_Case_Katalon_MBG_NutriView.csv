@@ -1,0 +1,293 @@
+﻿DOKUMEN RANCANGAN TEST CASE OTOMATISASI (KATALON STUDIO) - MBG NUTRIVIEW,,,,,,
+,,,,,,
+,,,,,,
+STORY,TC ID,TEST SUMMARY,ACTION STEP,EXPECTED RESULT,ACTUAL RESULT,STATUS
+"LOGIN & RBAC
+(FR-001 s.d. FR-004)",TC_001,Sebagai Admin SPPG saya ingin login menggunakan username dan kata sandi yang valid (DU-01),"1. WebUI.openBrowser('http://127.0.0.1:8000/login')
+2. WebUI.setText('input_username', 'admin_uji')
+3. WebUI.setText('input_password', 'Admin#Uji2026')
+4. WebUI.click('btn_login')","1. Berhasil autentikasi sesi Admin SPPG
+2. Diarahkan ke halaman Dashboard Admin (/admin/dashboard)
+3. Menampilkan metrik Total Penerima Manfaat, Status Batch Hari Ini & Audit Log",,
+,TC_002,Sebagai Ahli Gizi saya ingin login menggunakan kredensial valid (DU-02),"1. WebUI.openBrowser('http://127.0.0.1:8000/login')
+2. WebUI.setText('input_username', 'gizi_uji')
+3. WebUI.setText('input_password', 'Gizi#Uji2026')
+4. WebUI.click('btn_login')","1. Berhasil login sebagai Ahli Gizi
+2. Diarahkan ke halaman Dashboard Ahli Gizi (/gizi/dashboard)
+3. Menampilkan menu Data Gizi, Hitung & Validasi, Menu dan Bahan (lihat), KPI",,
+,TC_003,Sebagai pengguna saya ingin menguji login dengan username yang tidak terdaftar (DU-03),"1. WebUI.openBrowser('http://127.0.0.1:8000/login')
+2. WebUI.setText('input_username', 'user_tidak_terdaftar')
+3. WebUI.setText('input_password', 'Admin#Uji2026')
+4. WebUI.click('btn_login')","1. Gagal login dan sesi tidak terbentuk
+2. Tetap berada di halaman /login
+3. Menampilkan pesan generik 'Kombinasi username atau kata sandi tidak valid.' (NFR-003)",,
+,TC_004,Sebagai Admin saya ingin menguji login dengan kata sandi yang salah (DU-04),"1. WebUI.openBrowser('http://127.0.0.1:8000/login')
+2. WebUI.setText('input_username', 'admin_uji')
+3. WebUI.setText('input_password', 'PasswordSalah123!')
+4. WebUI.click('btn_login')","1. Gagal login
+2. Menampilkan pesan error 'Kombinasi username atau kata sandi tidak valid.'
+3. Mencatat aktivitas 'login_gagal' ke tabel Audit Log",,
+,TC_005,Sebagai pengguna saya ingin menguji proteksi brute-force setelah 5 kali gagal login berturut-turut (NFR-003),"1. Buka halaman 'http://127.0.0.1:8000/login'
+2. Kirim form login dengan username 'admin_uji' dan password salah sebanyak 5 kali
+3. Lakukan percobaan login ke-6","1. RateLimiter memblokir percobaan login ke-6 selama 60 detik
+2. Menampilkan pesan 'Terlalu banyak percobaan login gagal. Silakan coba lagi dalam ... detik.'
+3. Mencatat aksi 'login_diblokir_throttling' ke Audit Log",,
+,TC_006,Sebagai Ahli Gizi saya ingin menguji pembatasan hak akses (RBAC) saat membuka URL operasional Admin (FR-003),"1. Login sebagai Ahli Gizi ('gizi_uji')
+2. WebUI.navigateToUrl('http://127.0.0.1:8000/admin/menu')
+3. Periksa pengalihan halaman dan catatan Audit Log","1. Middleware CheckRole menolak akses lintas peran
+2. Mengalihkan pengguna kembali ke '/gizi/dashboard' dengan pesan peringatan akses ditolak
+3. Mencatat peristiwa 'akses_ditolak' ke Audit Log",,
+"KELOLA DATA MENU & KOMPOSISI
+(FR-005 & FR-007)",TC_007,Sebagai Admin saya ingin menambah data menu harian baru sebagai Draft dengan input valid (BT-01),"1. Login Admin > Buka menu 'Data Menu' (/admin/menu?create=1)
+2. Input Nama Menu 'Paket Nasi Ikan Tongkol Balado', Tanggal Penyajian hari ini, Jenis 'Makanan lengkap'
+3. Input Ukuran Porsi '450' gram, Jumlah Porsi Rencana '300', pilih bahan penyusun
+4. Klik 'Simpan sebagai Draft'","1. Data menu baru beserta komposisi bahan berhasil disimpan dalam transaksi DB
+2. Status menu tercatat sebagai 'Draft'
+3. Menampilkan notifikasi 'Menu berhasil ditambahkan sebagai Draft.'",,
+,TC_008,Sebagai Admin saya ingin menambah menu baru dan langsung mengajukannya ke validasi Ahli Gizi,"1. Buka menu 'Data Menu' > Klik '+ Tambah Menu'
+2. Isi Nama Menu 'Paket Nasi Ayam Semur & Sayur Sop', Ukuran Porsi '450' g, Rencana '300' porsi
+3. Tambahkan baris bahan baku (Beras, Daging Ayam, Wortel)
+4. Klik tombol 'Simpan & Ajukan Validasi Ahli Gizi'","1. Menu tersimpan dengan status 'Menunggu Validasi'
+2. Muncul di daftar antrean validasi pada Dashboard Ahli Gizi
+3. Tercatat aksi 'tambah_menu' pada Audit Log",,
+,TC_009,Sebagai Admin saya ingin menguji penolakan tambah menu jika ukuran porsi di bawah batas minimal < 50 gram,"1. Buka form tambah menu di '/admin/menu?create=1'
+2. Isi Nama Menu 'Menu Porsi Kecil', Ukuran Porsi '20' gram (< 50g), Jumlah Porsi '100'
+3. Klik 'Simpan sebagai Draft'","1. Sistem menolak penyimpanan data menu
+2. Menampilkan pesan kesalahan validasi bahwa ukuran porsi minimal 50 gram",,
+,TC_010,Sebagai Admin saya ingin mencari data menu berdasarkan kata kunci nama dan memfilter status menu,"1. Buka halaman 'Data Menu' (/admin/menu)
+2. Ketik 'Nasi Ayam' pada kolom pencarian dan pilih dropdown status 'Terpublikasi'
+3. Klik tombol 'Cari'","1. Tabel daftar menu hanya menampilkan menu yang mengandung kata 'Nasi Ayam' dengan status 'Terpublikasi'
+2. Tombol 'Reset' muncul untuk mengembalikan seluruh daftar",,
+,TC_011,Sebagai Admin saya ingin menguji rollback status otomatis saat mengubah bahan pada menu Terpublikasi (FR-007),"1. Pilih menu yang sudah berstatus 'Terpublikasi' pada halaman Data Menu
+2. Ubah komposisi bahan baku atau takaran gram per sajian
+3. Klik 'Simpan Perubahan Menu'","1. Status menu otomatis dikembalikan menjadi 'Menunggu Validasi' (FR-007)
+2. Flag is_published menjadi false (disembunyikan sementara dari Portal Publik)
+3. Menampilkan pesan informasi verifikasi ulang oleh Ahli Gizi",,
+,TC_012,Sebagai Admin saya ingin menghapus data menu berstatus Draft yang batal disajikan,"1. Buka halaman 'Data Menu' (/admin/menu)
+2. Cari baris menu uji berstatus 'Draft'
+3. Klik tombol 'Hapus' dan konfirmasi dialog penghapusan","1. Data menu terhapus dari tabel daftar menu
+2. Menampilkan notifikasi 'Menu berhasil dihapus.'
+3. Aktivitas 'hapus_menu' tercatat di Audit Log",,
+"KELOLA BAHAN BAKU & LOT
+(FR-005 & FR-006)",TC_013,Sebagai Admin saya ingin menambah stok bahan baku baru dengan kode lot unik dan tanggal kedaluwarsa valid (BT-02),"1. Buka menu 'Bahan Baku' (/admin/bahan-baku)
+2. Input Nama Bahan 'Daging Ayam Segar', Kode Lot 'LOT-AYM-2611', Kategori 'Protein Hewani'
+3. Input Stok '45' kg, Tanggal Masuk '2026-11-18', Kedaluwarsa '2026-11-25', Supplier 'CV Unggas Parepare'
+4. Klik 'Simpan Bahan Baku'","1. Data bahan baku berhasil disimpan ke database
+2. Menampilkan notifikasi 'Bahan baku berhasil disimpan.'
+3. Lot 'LOT-AYM-2611' tampil pada tabel dengan status masa simpan 'Aman'",,
+,TC_014,Sebagai Admin saya ingin menguji penolakan input bahan baku dengan jumlah stok 0 atau negatif (FR-006),"1. Buka halaman 'Bahan Baku' (/admin/bahan-baku)
+2. Input Nama Bahan 'Beras Uji Nol', Kode Lot 'LOT-ERR-01', Stok '0' kg
+3. Isi Tanggal Masuk '2026-11-18', Kedaluwarsa '2026-12-18', Supplier 'UD Pangan'
+4. Klik 'Simpan Bahan Baku'","1. Penyimpanan ditolak oleh validasi server (min:0.01)
+2. Menampilkan pesan error 'Stok bahan minimal harus lebih dari 0 (FR-006).'",,
+,TC_015,Sebagai Admin saya ingin menguji penolakan bahan baku dengan tanggal kedaluwarsa <= tanggal masuk (FR-006),"1. Buka halaman 'Bahan Baku' (/admin/bahan-baku)
+2. Input Nama Bahan 'Telur Uji Invalid', Kode Lot 'LOT-ERR-02', Stok '20' kg
+3. Input Tanggal Masuk '2026-11-20' dan Tanggal Kedaluwarsa '2026-11-18' (sebelum tanggal masuk)
+4. Klik 'Simpan Bahan Baku'","1. Sistem menolak penyimpanan data bahan baku
+2. Menampilkan pesan error 'Tanggal kedaluwarsa harus setelah tanggal masuk (FR-006).'",,
+,TC_016,Sebagai Admin saya ingin menguji penolakan duplikasi Kode Lot bahan baku yang sudah terdaftar,"1. Buka halaman 'Bahan Baku' (/admin/bahan-baku)
+2. Input bahan baru menggunakan Kode Lot yang sudah ada di sistem (misal 'LOT-AYM-2611')
+3. Klik 'Simpan Bahan Baku'","1. Sistem menolak penyimpanan kode lot duplikat
+2. Menampilkan pesan validasi 'Kode lot sudah terdaftar.'",,
+,TC_017,Sebagai Admin saya ingin memfilter daftar bahan baku berdasarkan kata kunci nama/supplier dan kategori,"1. Buka halaman 'Bahan Baku' (/admin/bahan-baku)
+2. Ketik 'Beras' pada kolom pencarian dan pilih kategori 'Karbohidrat'
+3. Klik tombol 'Filter'","1. Tabel hanya menampilkan bahan baku yang cocok dengan kata kunci 'Beras' pada kategori 'Karbohidrat'
+2. Kartu ringkasan total stok dan peringatan kedaluwarsa tetap akurat",,
+,TC_018,Sebagai Admin saya ingin melacak ketertelusuran (traceability) lot bahan baku berdasarkan menu harian,"1. Buka halaman 'Bahan Baku' (/admin/bahan-baku)
+2. Pilih salah satu menu pada dropdown 'Lacak bahan untuk menu (Traceability)'
+3. Periksa tabel hasil ketertelusuran","1. Sistem menampilkan daftar bahan baku, nomor lot, supplier, dan status kedaluwarsa yang dipakai oleh menu terpilih",,
+"KELOMPOK PENERIMA & PORSI
+(FR-021 & OR-004)",TC_019,Sebagai Admin saya ingin menambah kelompok penerima manfaat sekolah baru beserta kuota porsi dan titik antar,"1. Buka menu 'Penerima dan Porsi' (/admin/penerima-porsi)
+2. Input Nama Kelompok 'SDN 5 Ujung Lare', Kategori 'SD/MI', Jumlah Penerima '240', Porsi Terkemas '240'
+3. Input Titik Antar 'Jl. Jenderal Sudirman No. 12', Estimasi Waktu Tempuh '20' menit
+4. Klik 'Simpan Kelompok'","1. Kelompok penerima baru berhasil disimpan ke database
+2. Tampil di tabel daftar sasaran distribusi beserta estimasi waktu tempuh 20 menit
+3. Metrik Total Penerima Manfaat bertambah otomatis",,
+,TC_020,Sebagai Admin saya ingin memperbarui realisasi porsi terkemas dan estimasi waktu tempuh sekolah sasaran,"1. Buka halaman 'Penerima dan Porsi' (/admin/penerima-porsi)
+2. Klik tombol 'Ubah' pada baris 'SDN 5 Ujung Lare'
+3. Ubah Porsi Terkemas menjadi '245' dan Estimasi Waktu Tempuh menjadi '25' menit
+4. Klik 'Simpan Perubahan'","1. Data kuota porsi terkemas dan waktu tempuh berhasil diperbarui
+2. Tercatat aktivitas 'ubah_kelompok_penerima' pada Audit Log",,
+,TC_021,Sebagai Admin saya ingin menguji penolakan input jumlah penerima manfaat bernilai 0 atau negatif,"1. Buka halaman 'Penerima dan Porsi' (/admin/penerima-porsi)
+2. Isi Nama Kelompok 'Sekolah Uji Nol', Jumlah Penerima '0'
+3. Klik 'Simpan Kelompok'","1. Sistem menolak penyimpanan data kelompok penerima
+2. Menampilkan pesan validasi bahwa jumlah penerima minimal 1",,
+,TC_022,Sebagai Admin saya ingin memverifikasi deteksi peringatan selisih porsi terkemas yang kurang dari jumlah penerima,"1. Set Porsi Terkemas sebuah kelompok menjadi '180' sedangkan Jumlah Penerima '200' (kurang 20 porsi)
+2. Buka halaman 'Dashboard Admin' (/admin/dashboard)
+3. Periksa tabel 'Daftar pekerjaan'","1. Sistem otomatis menampilkan item pekerjaan 'Porsi [Nama Sekolah] kurang 20'
+2. Memberikan rekomendasi tindak lanjut pemeriksaan kapasitas porsi terkemas",,
+,TC_023,Sebagai Admin saya ingin memastikan tabel penerima hanya memuat agregat kelompok tanpa data pribadi siswa (OR-004),"1. Buka halaman 'Penerima dan Porsi' (/admin/penerima-porsi)
+2. Periksa struktur kolom formulir dan tabel penerima manfaat","1. Hanya memuat Nama Kelompok/Sekolah, Kategori, Jumlah Penerima Agregat, Porsi, Titik Antar & Waktu Tempuh
+2. Tidak menyimpan NIK, nama siswa individu, atau data pribadi sensitif sesuai UU PDP No. 27/2022",,
+"MASTER GIZI & HITUNG AKG
+(FR-008 & FR-009)",TC_024,Sebagai Ahli Gizi saya ingin menambah referensi nilai gizi bahan baku per 100 gram (TKPI),"1. Login sebagai Ahli Gizi ('gizi_uji') > Buka '/gizi/dashboard'
+2. Klik '+ Tambah Data Gizi'
+3. Input Nama Bahan 'Ikan Bandeng Segar', Kategori 'Protein Hewani', Basis '100' g
+4. Input Energi '123' kkal, Protein '20.0' g, Lemak '4.8' g, Karbohidrat '0' g, Serat '0' g lalu klik 'Simpan'","1. Referensi gizi per 100g berhasil disimpan ke tabel data_gizis
+2. Tampil pada daftar Master Data Gizi Bahan
+3. Tercatat aksi 'tambah_data_gizi' pada Audit Log",,
+,TC_025,Sebagai Ahli Gizi saya ingin memperbarui nilai kandungan makronutrisi pada master data gizi,"1. Pada '/gizi/dashboard', klik tombol 'Ubah' pada baris bahan 'Ikan Bandeng Segar'
+2. Perbarui nilai Energi menjadi '129' kkal dan Protein menjadi '20.5' g
+3. Klik 'Simpan Perubahan'","1. Nilai gizi per 100g berhasil diperbarui
+2. Kalkulasi gizi menu yang memakai bahan tersebut otomatis ikut menyesuaikan",,
+,TC_026,Sebagai Ahli Gizi saya ingin mencari bahan rujukan pada Master Data Gizi berdasarkan kata kunci nama,"1. Buka '/gizi/dashboard'
+2. Ketik 'Ayam' pada kolom 'Cari bahan rujukan'
+3. Klik tombol 'Cari'","1. Tabel Master Data Gizi hanya menampilkan bahan yang mengandung kata 'Ayam'
+2. Menampilkan rincian Energi, Protein, Lemak, Karbohidrat, dan Serat per 100g",,
+,TC_027,Sebagai Ahli Gizi saya ingin memverifikasi akurasi rumus kalkulasi gizi menu per 1 sajian (FR-009),"1. Buka halaman 'Hitung & Validasi' (/gizi/hitung-validasi)
+2. Pilih menu 'Paket Nasi Ayam Semur & Tempe'
+3. Bandingkan total Energi, Protein, Lemak, Karbohidrat, dan Serat dengan rumus sum((gram/100) * gizi_100g)","1. Sistem menghitung total nutrisi per sajian secara presisi hingga 2 desimal
+2. Menampilkan perbandingan terhadap acuan standar AKG harian",,
+,TC_028,Sebagai Ahli Gizi saya ingin menguji deteksi peringatan apabila ada bahan menu yang belum punya referensi gizi,"1. Admin membuat menu dengan bahan baru 'Sayur Pakis' yang belum terdaftar di Master Data Gizi
+2. Ahli Gizi memilih menu tersebut di halaman '/gizi/hitung-validasi'","1. Sistem menampilkan peringatan bahan yang belum memiliki data gizi ('Sayur Pakis')
+2. Status kelengkapan gizi ditandai belum lengkap (is_complete = false)",,
+,TC_029,Sebagai Admin saya ingin memastikan panel nilai gizi pada halaman Data Menu bersifat hanya-baca (FR-008),"1. Login sebagai Admin ('admin_uji') > Buka '/admin/menu'
+2. Pilih salah satu menu untuk diedit dan periksa kartu 'Nilai gizi · hanya baca'
+3. Coba kirim request POST langsung ke '/gizi/data-gizi'","1. Kartu nilai gizi di halaman Admin hanya menampilkan teks hasil kalkulasi tanpa kolom input edit gizi
+2. Request POST Admin ke endpoint mutasi gizi ditolak oleh middleware RBAC",,
+"VALIDASI & PUBLIKASI MENU
+(FR-010 s.d. FR-014)",TC_030,Sebagai Ahli Gizi saya ingin menyetujui validasi menu (Tervalidasi) yang referensi gizinya lengkap (FR-010),"1. Login sebagai Ahli Gizi > Buka '/gizi/hitung-validasi'
+2. Pilih menu berstatus 'Menunggu Validasi' yang seluruh bahannya sudah memiliki data gizi
+3. Pilih aksi 'Setujui & Validasi (Sesuai AKG)' lalu klik 'Simpan Keputusan'","1. Status menu berubah menjadi 'Tervalidasi'
+2. Menampilkan notifikasi 'Menu telah divalidasi dan disetujui sesuai standar AKG.'
+3. Tombol 'Publikasikan ke Portal Publik' menjadi aktif",,
+,TC_031,Sebagai Ahli Gizi saya ingin menguji penolakan validasi menu jika referensi gizi bahan belum lengkap (FR-010),"1. Buka '/gizi/hitung-validasi' dan pilih menu yang salah satu bahannya belum memiliki referensi gizi 100g
+2. Pilih status 'Tervalidasi' lalu kirim form validasi","1. Sistem memblokir persetujuan validasi menu (FR-010)
+2. Menampilkan pesan error 'Menu tidak dapat divalidasi (FR-010): Data gizi per 100g belum lengkap...'
+3. Status menu tetap 'Menunggu Validasi'",,
+,TC_032,Sebagai Ahli Gizi saya ingin mengembalikan menu untuk revisi disertai catatan evaluasi kepada Admin (FR-011),"1. Buka '/gizi/hitung-validasi' > Pilih menu yang diajukan Admin
+2. Pilih opsi 'Kembalikan untuk Revisi'
+3. Isi catatan 'Tambahkan gramasi protein hewani minimal 15g/porsi' lalu klik 'Simpan'","1. Catatan revisi tersimpan pada menu
+2. Saat Admin membuka menu tersebut di '/admin/menu', tampil kotak peringatan berisi catatan revisi Ahli Gizi",,
+,TC_033,Sebagai Ahli Gizi saya ingin menguji penolakan aksi revisi menu apabila kolom catatan revisi dikosongkan (FR-011),"1. Buka '/gizi/hitung-validasi' > Pilih menu
+2. Pilih opsi 'Kembalikan untuk Revisi' namun kosongkan kolom 'Catatan Revisi'
+3. Klik tombol submit","1. Sistem menolak penyimpanan revisi tanpa catatan
+2. Menampilkan pesan validasi 'Catatan revisi wajib diisi saat mengembalikan menu ke Admin (FR-011).'",,
+,TC_034,Sebagai Ahli Gizi saya ingin mempublikasikan menu Tervalidasi ke Portal Publik beserta QR Code (FR-012 & FR-013),"1. Pada '/gizi/hitung-validasi', pilih menu yang sudah berstatus 'Tervalidasi'
+2. Klik tombol 'Publikasikan ke Portal Publik'","1. Status menu berubah menjadi 'Terpublikasi' dan is_published = true
+2. Menu langsung tampil di beranda Portal Publik ('/') lengkap dengan QR Code SVG
+3. Tercatat aksi 'publikasi_menu' di Audit Log",,
+,TC_035,Sebagai Ahli Gizi saya ingin menarik kembali publikasi (Unpublish) menu dari Portal Publik (FR-014),"1. Pada '/gizi/hitung-validasi', pilih menu yang sedang berstatus 'Terpublikasi'
+2. Klik tombol 'Tarik Publikasi (Unpublish)'","1. Status menu kembali ke 'Tervalidasi' dan is_published = false
+2. Menu disembunyikan dari Portal Publik dan pemindaian QR-nya ditolak
+3. Tercatat aksi 'tarik_publikasi' di Audit Log",,
+"PORTAL PUBLIK & QR CODE
+(FR-015 s.d. FR-017)",TC_036,"Sebagai Masyarakat saya ingin membuka Portal Publik tanpa login untuk melihat menu, gizi, dan asal bahan (PP-01)","1. WebUI.openBrowser('http://127.0.0.1:8000/') tanpa sesi login
+2. Periksa informasi Nama Menu, Takaran Saji, Target Produksi, 5 Kartu Nutrisi, dan Asal Bahan Baku/Supplier","1. Halaman terbuka cepat (< 3 detik) dalam mode read-only
+2. Menampilkan rincian Energi, Protein, Lemak, Karbohidrat, Serat per sajian
+3. Menampilkan daftar bahan penyusun lengkap dengan Kode Lot, Gramasi, dan Nama Supplier",,
+,TC_037,Sebagai Masyarakat saya ingin memfilter/mengganti tampilan menu harian melalui dropdown menu terpublikasi,"1. Buka beranda Portal Publik ('http://127.0.0.1:8000/')
+2. Pilih menu terpublikasi lain pada dropdown 'Pilih menu terpublikasi lain'
+3. Periksa perubahan judul menu dan nilai gizi","1. Halaman memuat rincian menu, komposisi bahan, nilai gizi, dan QR Code sesuai menu yang dipilih",,
+,TC_038,Sebagai Masyarakat saya ingin memindai tautan QR Code menu yang valid tanpa perlu login (FR-015),"1. WebUI.navigateToUrl('http://127.0.0.1:8000/portal/scan?token=mbg-menu-1')
+2. Periksa halaman tujuan setelah redirect","1. Sistem memvalidasi token 'mbg-menu-1' terhadap menu berstatus Terpublikasi
+2. Mengarahkan pengguna ke beranda Portal Publik ('/?menu_id=1') dan menampilkan detail menu tersebut",,
+,TC_039,Sebagai Masyarakat saya ingin menguji pemindaian token QR Code palsu / tidak dikenali (PP-03 & FR-017),"1. WebUI.navigateToUrl('http://127.0.0.1:8000/portal/scan?token=xyz-tidak-valid')
+2. Periksa tampilan halaman peringatan","1. Sistem tidak mengalami crash (HTTP 200 dengan view peringatan ramah)
+2. Menampilkan judul 'Kode QR Tidak Dikenali'
+3. Menampilkan tombol 'Buka Beranda Portal Publik'",,
+,TC_040,Sebagai Masyarakat saya ingin menguji pemindaian QR Code pada menu yang belum/ditarik publikasinya (PP-04),"1. Pastikan menu ID #2 berstatus 'Draft' atau telah ditarik publikasinya
+2. Akses 'http://127.0.0.1:8000/portal/scan?token=mbg-menu-2'","1. Sistem menolak menampilkan menu yang belum terpublikasi
+2. Menampilkan halaman 'Kode QR Tidak Dikenali' dengan pesan bahwa menu belum dipublikasikan (FR-017)",,
+,TC_041,Sebagai Ahli Gizi saya ingin melihat daftar Menu & Bahan serta KPI dalam mode hanya-baca (PP-02 & FR-016),"1. Login sebagai Ahli Gizi ('gizi_uji')
+2. Buka '/gizi/menu-bahan' dan '/gizi/kpi-prediksi'
+3. Periksa ketersediaan tombol ubah/hapus operasional","1. Kedua halaman menampilkan data lengkap komposisi menu, stok lot bahan, dan indikator KPI
+2. Tidak terdapat tombol edit/hapus jadwal maupun tombol catat tahap dapur",,
+"JADWAL PRODUKSI & DISTRIBUSI
+(FR-021 s.d. FR-023)",TC_042,Sebagai Admin saya ingin menyusun jadwal produksi dan pengantaran baru tanpa bentrok petugas (TH-01),"1. Login Admin > Buka menu 'Jadwal Produksi' (/admin/jadwal-produksi)
+2. Pilih Menu aktif, Kelompok Penerima 'SDN 1 Parepare', Batch 'Tahap 1', Tanggal '2026-11-25'
+3. Pilih Tahap 'Pengolahan', Jam Mulai '02:30', Selesai '05:00', Petugas 'Koki Utama A', Target '300' porsi
+4. Klik 'Simpan Jadwal'","1. Jadwal produksi berhasil disimpan dalam transaksi DB
+2. Menampilkan notifikasi 'Jadwal produksi berhasil disimpan.'
+3. Jadwal tampil di tabel tanpa indikator bentrok",,
+,TC_043,Sebagai Admin saya ingin menguji deteksi otomatis jadwal bentrok pada petugas dan jam beririsan (TH-02 & FR-022),"1. Buka halaman 'Jadwal Produksi' (/admin/jadwal-produksi)
+2. Input jadwal baru pada tanggal yang sama ('2026-11-25') untuk petugas yang sama ('Koki Utama A')
+3. Isi Jam Mulai '04:00' dan Selesai '06:00' (beririsan dengan jadwal 02:30 - 05:00)
+4. Klik 'Simpan Jadwal'","1. Sistem menolak penyimpanan jadwal yang bertumpukan (FR-022)
+2. Menampilkan pesan error 'Jadwal bentrok: Petugas Koki Utama A sudah dialokasikan pada tahap...'",,
+,TC_044,Sebagai Admin saya ingin memperbarui jam rencana dan petugas pada jadwal produksi yang sudah terdaftar,"1. Pada tabel '/admin/jadwal-produksi', klik tombol 'Ubah' pada salah satu baris jadwal
+2. Ubah Petugas Rencana menjadi 'Tim Distribusi B' dan Target Tiba menjadi '07:45'
+3. Klik 'Simpan Perubahan'","1. Data jadwal produksi berhasil diperbarui
+2. Tercatat aktivitas 'ubah_jadwal' pada Audit Log",,
+,TC_045,Sebagai Admin saya ingin memfilter daftar jadwal produksi berdasarkan menu dan kelompok penerima,"1. Buka halaman 'Jadwal Produksi' (/admin/jadwal-produksi)
+2. Pilih filter Menu dan Kelompok Penerima pada bar pencarian atas
+3. Klik tombol 'Filter'",1. Tabel hanya menampilkan baris jadwal produksi/pengantaran yang sesuai dengan menu dan kelompok terpilih,,
+,TC_046,Sebagai Masyarakat saya ingin melihat tabel Jadwal Produksi & Pengantaran Terencana di Portal Publik (FR-023),"1. Buka halaman publik 'http://127.0.0.1:8000/alur-operasional' tanpa login
+2. Gulir ke seksi 'Jadwal Produksi & Pengantaran Terencana'
+3. Periksa rincian kolom jadwal","1. Menampilkan tabel read-only berisi Tahap & Batch, Kelompok Penerima, Jam Rencana, Target Tiba, Petugas & Porsi, serta Status (FR-023)
+2. Di layar HP otomatis menyesuaikan menjadi kartu jadwal responsif",,
+"PENCATATAN TAHAP DAPUR
+(FR-018 s.d. FR-020, FR-026)",TC_047,"Sebagai Admin saya ingin mencatat realisasi waktu mulai, selesai, dan petugas pada 4 tahap dapur (FR-018)","1. Buka menu 'Pencatatan Tahap' (/admin/pencatatan-tahap)
+2. Pilih tahap 'terima_bahan', isi Mulai '01:30', Selesai '02:00', Petugas 'Tim Logistik'
+3. Lanjutkan catat tahap 'pengolahan' (matang '05:15'), 'pengemasan' ('05:30'-'06:15', 300 porsi), dan 'pengantaran' ('07:15'-'07:50')","1. Seluruh 4 tahapan berhasil tercatat berstatus 'Selesai'
+2. Tahap pengemasan otomatis memicu Prediksi Risiko (FR-028)
+3. Tahap pengantaran otomatis memicu perhitungan Skor KPI (FR-025)",,
+,TC_048,Sebagai Admin saya ingin menguji penolakan pencatatan tahap jika waktu selesai atau petugas dikosongkan (TH-03 & FR-019),"1. Buka halaman 'Pencatatan Tahap' (/admin/pencatatan-tahap)
+2. Pilih tahap 'terima_bahan', isi Waktu Mulai '01:30', namun kosongkan Waktu Selesai dan Petugas Aktual
+3. Klik 'Simpan Tahap'","1. Sistem menolak penyimpanan data tahap yang tidak lengkap (FR-019)
+2. Menampilkan pesan validasi 'Waktu selesai aktual wajib diisi (FR-019).' dan 'Nama petugas penanggung jawab tahap wajib diisi (FR-019).'",,
+,TC_049,Sebagai Admin saya ingin menguji penolakan pencatatan tahap jika waktu selesai lebih awal dari waktu mulai (FR-019),"1. Buka halaman 'Pencatatan Tahap' (/admin/pencatatan-tahap)
+2. Pilih tahap 'pengolahan', isi Waktu Mulai '05:00' dan Waktu Selesai '03:30' (mundur)
+3. Isi Petugas 'Koki Uji' lalu klik 'Simpan Tahap'","1. Sistem menolak penyimpanan waktu kronologis terbalik
+2. Menampilkan pesan error 'Waktu selesai aktual tidak boleh lebih awal daripada waktu mulai aktual.'",,
+,TC_050,Sebagai Admin saya ingin menguji peringatan urutan tahap saat melompati tahap sebelumnya yang belum tercatat (TH-04 & FR-020),"1. Pada batch baru yang belum memiliki catatan 'pengolahan', pilih langsung tahap 'pengemasan'
+2. Isi Waktu Mulai '05:45', Selesai '06:20', Petugas 'Tim Kemas', Porsi '300'
+3. Klik 'Simpan Tahap'","1. Sistem mendeteksi pelanggaran urutan sekuensial tahap dapur
+2. Menampilkan banner peringatan 'Peringatan urutan tahap (FR-020): Tahap sebelumnya (pengolahan) belum tercatat selesai.'",,
+,TC_051,Sebagai Admin saya ingin menguji penandaan otomatis status Terlambat saat melewati jadwal + toleransi 15 menit (BT-04 & FR-026),"1. Pastikan jadwal rencana tahap 'pengantaran' berakhir pukul '07:45' (batas toleransi T=15 menit -> 08:00)
+2. Catat realisasi tahap 'pengantaran' dengan Waktu Mulai '07:30' dan Waktu Selesai '09:15'
+3. Periksa status tahap di Dashboard dan Portal Publik","1. Sistem otomatis menandai status_tahap menjadi 'terlambat' (FR-026)
+2. Menampilkan badge merah 'Selesai Terlambat' pada halaman Pencatatan Tahap dan Alur Publik
+3. Menurunkan skor indikator ketepatan waktu tiba (Sw) pada perhitungan KPI",,
+,TC_052,[Cadangan] Sebagai Admin saya ingin memperbarui realisasi pengantaran per titik sekolah sasaran,"1. Buka halaman 'Pencatatan Tahap' (/admin/pencatatan-tahap) setelah tahap pengantaran dibuat
+2. Pada tabel 'Realisasi pengantaran per titik penerima', ubah Waktu Berangkat '07:15', Waktu Tiba '07:40', Petugas Penerima 'Ibu Guru Piket', Status 'Diterima'
+3. Klik 'Simpan'","1. Realisasi pengantaran titik sekolah berhasil diperbarui
+2. Skor KPI diperbarui otomatis dan aktivitas 'update_pengantaran_titik' tercatat di Audit Log",,
+"KPI & PREDIKSI RISIKO 4 JAM
+(FR-025 s.d. FR-032)",TC_053,Sebagai Admin saya ingin memverifikasi perhitungan 7 indikator KPI dan kategori performa dapur (FR-025 & FR-026),"1. Buka menu 'KPI dan Prediksi Risiko' (/admin/kpi-prediksi)
+2. Pilih Menu dan Batch 'Tahap 1' yang seluruh tahapnya sudah selesai tepat waktu
+3. Periksa rincian 7 indikator (Sr, Sx, Sp, Sq, Sk, Sw, Sb) dan Skor Total Gabungan","1. Menampilkan nilai ketujuh indikator KPI sesuai bobot konfigurasi (config/mbg.php)
+2. Menampilkan Skor Total Berbobot dan klasifikasi kategori ('Baik' >= 90%, 'Perlu perbaikan' 75-89%, 'Prioritas perbaikan' < 75%)",,
+,TC_054,Sebagai Admin saya ingin menguji pencegahan kalkulasi skor KPI paksa jika tahap pengemasan belum tercatat (BT-03 & FR-027),"1. Pilih Batch produksi yang baru mencatat tahap 'terima_bahan' (belum ada waktu selesai pengemasan)
+2. Buka halaman '/admin/kpi-prediksi' untuk batch tersebut","1. KpiService mengembalikan null dan tidak memaksa perhitungan skor KPI yang belum lengkap (FR-027)
+2. Antarmuka menampilkan status menunggu kelengkapan pencatatan tahap operasional",,
+,TC_055,Sebagai Admin saya ingin menguji deteksi risiko Tidak Layak saat selisih waktu matang ke distribusi > 4 jam / 240 menit (TH-05),"1. Catat tahap 'pengolahan' dengan Waktu Matang Terakhir pukul '03:00' WITA
+2. Catat tahap 'pengemasan' selesai pukul '06:50' dan 'pengantaran' selesai pukul '07:30' (total 270 menit > 240 menit)
+3. Periksa halaman '/admin/kpi-prediksi'","1. Indikator Batas Waktu Konsumsi (Sb) otomatis turun menjadi 0% karena melampaui batas kritis 4 jam
+2. Hasil prediksi mengklasifikasikan batch sebagai 'Tidak Layak' (Risiko tinggi)
+3. Menampilkan teks disclaimer bahwa keputusan akhir berada pada petugas berwenang (FR-031)",,
+,TC_056,[Cadangan] Sebagai Admin saya ingin menguji mekanisme fallback aturan ambang batas saat modul Python tidak merespons (FR-032),"1. Simulasikan binary Python tidak ditemukan atau timeout > 5 detik pada PredictionService
+2. Simpan pencatatan selesai tahap 'pengemasan'
+3. Periksa respons prediksi risiko pada '/admin/kpi-prediksi'","1. Aplikasi tidak mengalami hang/error dan otomatis beralih ke metode hitungCadanganAmbangBatas (FR-032)
+2. Kelas kelayakan ('Layak' / 'Tidak Layak') dan probabilitas risiko tetap terhitung akurat",,
+"AUDIT LOG, KEAMANAN & UI
+(OR-001, NFR-005 s.d. NFR-008)",TC_057,Sebagai Admin saya ingin memverifikasi pencatatan jejak Audit Log (append-only) atas aktivitas sensitif (OR-001),"1. Lakukan aksi login, tambah menu, validasi gizi, dan catat tahap operasional
+2. Buka '/admin/dashboard' dan periksa kartu 'Aktivitas sistem terkini (Audit Log · OR-001)'","1. Menampilkan rekam jejak waktu (Timestamp), Username, Role, Jenis Aksi, dan ID Entitas
+2. Tabel audit_logs bersifat append-only tanpa tombol edit atau hapus di antarmuka",,
+,TC_058,[Cadangan] Sebagai Penguji Keamanan saya ingin memastikan input form dan pencarian aman dari eksekusi skrip XSS (NFR-007),"1. Login Admin > Tambah menu dengan nama mengandung payload '<script>alert(""xss-mbg"")</script>'
+2. Buka daftar '/admin/menu' dan beranda publik
+3. Periksa apakah alert JavaScript tereksekusi di browser","1. Seluruh output Blade di-escape otomatis menjadi entitas HTML (&lt;script&gt;)
+2. Tidak ada pop-up alert XSS yang tereksekusi di browser",,
+,TC_059,[Cadangan] Sebagai Penguji Keamanan saya ingin menguji ketahanan form login terhadap injeksi SQL (NFR-007),"1. Buka halaman 'http://127.0.0.1:8000/login'
+2. Input Username ""' OR '1'='1' -- "" dan Kata Sandi ""' OR '1'='1' -- ""
+3. Klik tombol 'Masuk ke Sistem'","1. Eloquent ORM menggunakan prepared statements sehingga payload SQLi diperlakukan sebagai string literal biasa
+2. Autentikasi ditolak dengan aman tanpa membocorkan struktur SQL",,
+,TC_060,[Cadangan] Sebagai Pengguna Mobile saya ingin menguji responsivitas layar HP dan navigasi drawer (NFR-005),"1. WebUI.setViewPortSize(375, 812) (Simulasi layar smartphone)
+2. Buka beranda Portal Publik ('/') dan halaman '/alur-operasional'
+3. Login Admin lalu klik tombol hamburger menu ('#mobile-menu-toggle')","1. Kartu nutrisi, split-hero, dan jadwal produksi otomatis menyesuaikan ke tampilan kartu mobile tanpa terpotong
+2. Drawer navigasi sidebar terbuka dan tertutup mulus di layar HP",,
+RINGKASAN RANCANGAN TEST CASE KATALON (TERMASUK TC CADANGAN) - MBG NUTRIVIEW,,,,,,
+,,,,,,
+No,Modul / Fitur (SRS),Kode FR,Rentang TC ID,Jumlah Test Case,PASSED,Belum Diuji
+1,Autentikasi & Hak Akses (RBAC),FR-001 - FR-004,TC_001 - TC_006,6,0,6
+2,Pengelolaan Data Menu & Komposisi,FR-005 & FR-007,TC_007 - TC_012,6,0,6
+3,Pengelolaan Bahan Baku & Traceability Lot,FR-005 & FR-006,TC_013 - TC_018,6,0,6
+4,Pengelolaan Kelompok Penerima & Kuota Porsi,FR-021 & OR-004,TC_019 - TC_023,5,0,5
+5,Master Data Gizi (TKPI) & Kalkulasi AKG,FR-008 & FR-009,TC_024 - TC_029,6,0,6
+6,Validasi Menu & Manajemen Publikasi,FR-010 - FR-014,TC_030 - TC_035,6,0,6
+7,Portal Publik Transparansi & Pemindaian QR,FR-015 - FR-017,TC_036 - TC_041,6,0,6
+8,"Jadwal Produksi, Distribusi & Deteksi Bentrok",FR-021 - FR-023,TC_042 - TC_046,5,0,5
+9,Pencatatan 4 Tahap Operasional Dapur (+1 TC Cadangan),"FR-018 - FR-020, FR-026",TC_047 - TC_052,6,0,6
+10,Skor KPI Operasional & Prediksi Risiko 4 Jam (+1 TC Cadangan),FR-025 - FR-032,TC_053 - TC_056,4,0,4
+11,"Audit Log, Keamanan & Responsivitas UI (+3 TC Cadangan)","OR-001, NFR-005 - NFR-008",TC_057 - TC_060,4,0,4
+TOTAL KESELURUHAN TEST CASE,,,,60,0,60

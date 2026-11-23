@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_006_VerifikasiParameterQueryMenuIdTidakDitemukanTetapAman</description>
+   <name>TC_006_VerifikasiParameterQueryMenuIdTidakDitemukanTetapAman</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>6518a808-d8f4-43d5-9b9a-fa91eecdb5d3</testCaseGuid>
+</TestCaseEntity>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_003_FilterPergantianMenuHarianMingguan</description>
+   <name>TC_003_FilterPergantianMenuHarianMingguan</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>4bb41874-bd0a-48ea-8095-a81704180aa0</testCaseGuid>
+</TestCaseEntity>

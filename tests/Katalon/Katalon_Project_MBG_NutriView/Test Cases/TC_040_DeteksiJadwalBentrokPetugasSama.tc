@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_040_DeteksiJadwalBentrokPetugasSama</description>
+   <name>TC_040_DeteksiJadwalBentrokPetugasSama</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>6c1e34f0-4e7a-4605-9f59-7ce44f5babba</testCaseGuid>
+</TestCaseEntity>

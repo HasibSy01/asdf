@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_047_VerifikasiKpiTujuhIndikatorDanPrediksiRisikoEmpatJam</description>
+   <name>TC_047_VerifikasiKpiTujuhIndikatorDanPrediksiRisikoEmpatJam</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>117dafdb-25c4-4b1b-88d3-2b23f3d016ba</testCaseGuid>
+</TestCaseEntity>

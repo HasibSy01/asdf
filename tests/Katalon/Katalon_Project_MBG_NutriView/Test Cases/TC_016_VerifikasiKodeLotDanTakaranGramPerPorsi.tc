@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_016_VerifikasiKodeLotDanTakaranGramPerPorsi</description>
+   <name>TC_016_VerifikasiKodeLotDanTakaranGramPerPorsi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>6891ad8d-b525-4ac0-9ac5-80f87fce34a9</testCaseGuid>
+</TestCaseEntity>

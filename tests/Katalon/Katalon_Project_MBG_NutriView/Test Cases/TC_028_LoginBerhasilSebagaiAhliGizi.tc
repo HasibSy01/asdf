@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_028_LoginBerhasilSebagaiAhliGizi</description>
+   <name>TC_028_LoginBerhasilSebagaiAhliGizi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>5a114b04-dbcd-4105-89eb-4064e30a47ca</testCaseGuid>
+</TestCaseEntity>

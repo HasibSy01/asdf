@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseEntity>
+   <description>Test Case Otomatis TC_026_PastikanPortalPublikReadOnlyTanpaTombolMutasi</description>
+   <name>TC_026_PastikanPortalPublikReadOnlyTanpaTombolMutasi</name>
+   <tag>MBG_NutriView</tag>
+   <comment></comment>
+   <testCaseGuid>78323092-3087-4e92-a2f2-8f027042898c</testCaseGuid>
+</TestCaseEntity>
