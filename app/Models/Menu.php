@@ -14,7 +14,11 @@ class Menu extends Model
         'tanggal_penyajian',
         'jenis_makanan',
         'ukuran_porsi_gram',
+        'ukuran_porsi_besar_gram',
+        'ukuran_porsi_kecil_gram',
         'jumlah_porsi_rencana',
+        'porsi_besar_rencana',
+        'porsi_kecil_rencana',
         'status',
         'catatan_revisi',
         'is_published',
@@ -26,7 +30,11 @@ class Menu extends Model
         'tanggal_penyajian' => 'date',
         'is_published' => 'boolean',
         'ukuran_porsi_gram' => 'integer',
+        'ukuran_porsi_besar_gram' => 'integer',
+        'ukuran_porsi_kecil_gram' => 'integer',
         'jumlah_porsi_rencana' => 'integer',
+        'porsi_besar_rencana' => 'integer',
+        'porsi_kecil_rencana' => 'integer',
     ];
 
     public function menuBahans()
@@ -55,9 +63,9 @@ class Menu extends Model
     }
 
     /**
-     * Hitung akumulasi total gizi per sajian (porsi) dari bahan penyusunnya
+     * Hitung akumulasi total gizi per sajian untuk Porsi Besar ('besar') atau Porsi Kecil ('kecil')
      */
-    public function hitungGiziPerSajian(): array
+    public function hitungGiziPerSajian(string $tipePorsi = 'besar'): array
     {
         $totalEnergi = 0;
         $totalProtein = 0;
@@ -66,18 +74,29 @@ class Menu extends Model
         $totalSerat = 0;
         $missingData = [];
 
+        $gramBesarAcuan = (int) ($this->ukuran_porsi_besar_gram ?: $this->ukuran_porsi_gram ?: 450);
+        $gramKecilAcuan = (int) ($this->ukuran_porsi_kecil_gram ?: max(150, round($gramBesarAcuan * 0.68)));
+        $rasioKecil = $gramBesarAcuan > 0 ? ($gramKecilAcuan / $gramBesarAcuan) : 0.68;
+
         foreach ($this->menuBahans as $mb) {
+            if (!$mb->bahanBaku) {
+                continue;
+            }
             $gizi = DataGizi::where('nama_bahan', 'LIKE', '%' . $mb->bahanBaku->nama_bahan . '%')->first();
             if (!$gizi) {
                 $missingData[] = $mb->bahanBaku->nama_bahan;
                 continue;
             }
 
-            // Berat per porsi dalam gram
-            $gram = $mb->berat_per_sajian_gram;
-            if ($gram <= 0 && $this->jumlah_porsi_rencana > 0) {
-                // Konversi dari jumlah_batch kg ke gram per porsi
-                $gram = ($mb->jumlah_batch * 1000) / $this->jumlah_porsi_rencana;
+            $gramBesar = (float) ($mb->berat_porsi_besar_gram > 0 ? $mb->berat_porsi_besar_gram : $mb->berat_per_sajian_gram);
+            if ($gramBesar <= 0 && $this->jumlah_porsi_rencana > 0) {
+                $gramBesar = ($mb->jumlah_batch * 1000) / $this->jumlah_porsi_rencana;
+            }
+
+            if ($tipePorsi === 'kecil') {
+                $gram = (float) ($mb->berat_porsi_kecil_gram > 0 ? $mb->berat_porsi_kecil_gram : round($gramBesar * $rasioKecil, 1));
+            } else {
+                $gram = $gramBesar;
             }
 
             $factor = $gram / ($gizi->basis_berat_gram ?: 100);
@@ -89,6 +108,8 @@ class Menu extends Model
         }
 
         return [
+            'tipe_porsi' => $tipePorsi,
+            'ukuran_gram' => $tipePorsi === 'kecil' ? $gramKecilAcuan : $gramBesarAcuan,
             'energi_kkal' => round($totalEnergi, 2),
             'protein_g' => round($totalProtein, 2),
             'lemak_g' => round($totalLemak, 2),

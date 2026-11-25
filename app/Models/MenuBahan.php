@@ -16,11 +16,15 @@ class MenuBahan extends Model
         'satuan',
         'komponen',
         'berat_per_sajian_gram',
+        'berat_porsi_besar_gram',
+        'berat_porsi_kecil_gram',
     ];
 
     protected $casts = [
         'jumlah_batch' => 'decimal:2',
         'berat_per_sajian_gram' => 'decimal:2',
+        'berat_porsi_besar_gram' => 'decimal:2',
+        'berat_porsi_kecil_gram' => 'decimal:2',
     ];
 
     public function menu()

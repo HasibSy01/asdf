@@ -45,14 +45,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/jadwal-produksi/{jadwal}/update', [AdminController::class, 'updateJadwal'])->name('jadwal.update');
     Route::delete('/jadwal-produksi/{jadwal}', [AdminController::class, 'destroyJadwal'])->name('jadwal.destroy');
 
-    // Pencatatan Tahap
+    // Pencatatan Tahap (Otomatis 1-Klik & Manual)
     Route::get('/pencatatan-tahap', [AdminController::class, 'pencatatanTahap'])->name('tahap.index');
     Route::post('/pencatatan-tahap', [AdminController::class, 'storeTahap'])->name('tahap.store');
+    Route::post('/pencatatan-tahap/aksi-cepat', [AdminController::class, 'aksiCepatTahap'])->name('tahap.quick');
     Route::post('/pencatatan-tahap/titik/{titik}/update', [AdminController::class, 'updatePengantaranTitik'])->name('tahap.titik.update');
 
-    // KPI & Prediksi Risiko
-    Route::get('/kpi-prediksi', [AdminController::class, 'kpiPrediksi'])->name('kpi.index');
-    Route::post('/kpi-prediksi/hitung', [AdminController::class, 'hitungUlangKpi'])->name('kpi.hitung');
+    // KPI Mingguan (Evaluasi 1x Seminggu - Terpisah dari Random Forest)
+    Route::get('/kpi-mingguan', [AdminController::class, 'kpiMingguan'])->name('kpi.index');
+    Route::post('/kpi-mingguan/hitung', [AdminController::class, 'hitungUlangKpi'])->name('kpi.hitung');
+    Route::get('/kpi-prediksi', fn () => redirect()->route('admin.kpi.index'));
+
+    // Prediksi Risiko Random Forest (Pra-Distribusi per Batch)
+    Route::get('/prediksi-risiko', [AdminController::class, 'prediksiRisiko'])->name('prediksi.index');
+    Route::post('/prediksi-risiko/hitung', [AdminController::class, 'hitungUlangPrediksi'])->name('prediksi.hitung');
 });
 
 // 4. Modul Khusus Ahli Gizi (Role: ahli_gizi)
@@ -73,6 +79,8 @@ Route::middleware(['auth', 'role:ahli_gizi'])->prefix('gizi')->name('gizi.')->gr
     // Menu dan Bahan (Hanya Baca)
     Route::get('/menu-bahan', [GiziController::class, 'menuBahanLihat'])->name('menu.lihat');
 
-    // KPI & Prediksi (Hanya Baca)
-    Route::get('/kpi-prediksi', [GiziController::class, 'kpiPrediksi'])->name('kpi.lihat');
+    // KPI Mingguan & Prediksi Risiko Terpisah (Hanya Baca)
+    Route::get('/kpi-mingguan', [GiziController::class, 'kpiMingguan'])->name('kpi.lihat');
+    Route::get('/prediksi-risiko', [GiziController::class, 'prediksiRisiko'])->name('prediksi.lihat');
+    Route::get('/kpi-prediksi', fn () => redirect()->route('gizi.kpi.lihat'));
 });

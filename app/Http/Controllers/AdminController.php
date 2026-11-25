@@ -96,9 +96,10 @@ class AdminController extends Controller
         $editingMenu = $request->filled('edit')
             ? Menu::with(['kelompokPenerima', 'menuBahans.bahanBaku'])->find($request->edit)
             : $menus->first();
-        $editingGizi = $editingMenu ? $editingMenu->hitungGiziPerSajian() : null;
+        $editingGizi = $editingMenu ? $editingMenu->hitungGiziPerSajian('besar') : null;
+        $editingGiziKecil = $editingMenu ? $editingMenu->hitungGiziPerSajian('kecil') : null;
 
-        return view('admin.menu.index', compact('menus', 'kelompoks', 'bahanBakus', 'editingMenu', 'editingGizi'));
+        return view('admin.menu.index', compact('menus', 'kelompoks', 'bahanBakus', 'editingMenu', 'editingGizi', 'editingGiziKecil'));
     }
 
     public function storeMenu(Request $request)
@@ -107,8 +108,12 @@ class AdminController extends Controller
             'nama_menu' => 'required|string|max:255',
             'tanggal_penyajian' => 'required|date',
             'jenis_makanan' => 'required|string',
-            'ukuran_porsi_gram' => 'required|numeric|min:50',
-            'jumlah_porsi_rencana' => 'required|numeric|min:1',
+            'ukuran_porsi_gram' => 'nullable|numeric|min:50',
+            'ukuran_porsi_besar_gram' => 'nullable|numeric|min:50',
+            'ukuran_porsi_kecil_gram' => 'nullable|numeric|min:50',
+            'jumlah_porsi_rencana' => 'nullable|numeric|min:1',
+            'porsi_besar_rencana' => 'nullable|numeric|min:0',
+            'porsi_kecil_rencana' => 'nullable|numeric|min:0',
             'kelompok_penerima_id' => 'nullable|exists:kelompok_penerimas,id',
             'foto_menu' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'bahan_ids' => 'nullable|array',
@@ -116,21 +121,38 @@ class AdminController extends Controller
             'satuan' => 'nullable|array',
             'komponen' => 'nullable|array',
             'berat_per_sajian' => 'nullable|array',
+            'berat_porsi_besar' => 'nullable|array',
+            'berat_porsi_kecil' => 'nullable|array',
         ], [
             'nama_menu.required' => 'Nama menu wajib diisi.',
             'tanggal_penyajian.required' => 'Tanggal penyajian wajib diisi.',
-            'ukuran_porsi_gram.required' => 'Ukuran porsi wajib diisi.',
-            'jumlah_porsi_rencana.required' => 'Jumlah porsi rencana wajib diisi.',
         ]);
 
-        $menuData = collect($validated)->only([
-            'nama_menu',
-            'tanggal_penyajian',
-            'jenis_makanan',
-            'ukuran_porsi_gram',
-            'jumlah_porsi_rencana',
-            'kelompok_penerima_id',
-        ])->toArray();
+        $gramBesar = (int) ($request->input('ukuran_porsi_besar_gram') ?: $request->input('ukuran_porsi_gram') ?: 450);
+        $gramKecil = (int) ($request->input('ukuran_porsi_kecil_gram') ?: max(150, round($gramBesar * 0.68)));
+
+        if ($request->filled('porsi_besar_rencana') || $request->filled('porsi_kecil_rencana')) {
+            $rencanaBesar = (int) $request->input('porsi_besar_rencana', 0);
+            $rencanaKecil = (int) $request->input('porsi_kecil_rencana', 0);
+            $totalRencana = max(1, $rencanaBesar + $rencanaKecil);
+        } else {
+            $totalRencana = max(1, (int) $request->input('jumlah_porsi_rencana', 300));
+            $rencanaKecil = (int) round($totalRencana * 0.35);
+            $rencanaBesar = max(0, $totalRencana - $rencanaKecil);
+        }
+
+        $menuData = [
+            'nama_menu' => $validated['nama_menu'],
+            'tanggal_penyajian' => $validated['tanggal_penyajian'],
+            'jenis_makanan' => $validated['jenis_makanan'],
+            'ukuran_porsi_gram' => $gramBesar,
+            'ukuran_porsi_besar_gram' => $gramBesar,
+            'ukuran_porsi_kecil_gram' => $gramKecil,
+            'jumlah_porsi_rencana' => $totalRencana,
+            'porsi_besar_rencana' => $rencanaBesar,
+            'porsi_kecil_rencana' => $rencanaKecil,
+            'kelompok_penerima_id' => $validated['kelompok_penerima_id'] ?? null,
+        ];
 
         $menuData['status'] = $request->input('action_type') === 'kirim_validasi' ? 'menunggu_validasi' : 'draft';
         if ($fotoPath = $this->handleFotoMenuUpload($request)) {
@@ -146,7 +168,7 @@ class AdminController extends Controller
         });
 
         return redirect()->route('admin.menu.index', ['edit' => $menu->id])
-            ->with('success', $menu->status === 'menunggu_validasi' ? 'Menu berhasil ditambahkan dan diajukan untuk validasi gizi.' : 'Menu berhasil ditambahkan sebagai Draft.');
+            ->with('success', $menu->status === 'menunggu_validasi' ? 'Menu (Porsi Besar & Porsi Kecil) berhasil ditambahkan dan diajukan untuk validasi gizi.' : 'Menu berhasil ditambahkan sebagai Draft.');
     }
 
     public function updateMenu(Request $request, Menu $menu)
@@ -155,8 +177,12 @@ class AdminController extends Controller
             'nama_menu' => 'required|string|max:255',
             'tanggal_penyajian' => 'required|date',
             'jenis_makanan' => 'required|string',
-            'ukuran_porsi_gram' => 'required|numeric|min:50',
-            'jumlah_porsi_rencana' => 'required|numeric|min:1',
+            'ukuran_porsi_gram' => 'nullable|numeric|min:50',
+            'ukuran_porsi_besar_gram' => 'nullable|numeric|min:50',
+            'ukuran_porsi_kecil_gram' => 'nullable|numeric|min:50',
+            'jumlah_porsi_rencana' => 'nullable|numeric|min:1',
+            'porsi_besar_rencana' => 'nullable|numeric|min:0',
+            'porsi_kecil_rencana' => 'nullable|numeric|min:0',
             'kelompok_penerima_id' => 'nullable|exists:kelompok_penerimas,id',
             'foto_menu' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'bahan_ids' => 'nullable|array',
@@ -164,19 +190,38 @@ class AdminController extends Controller
             'satuan' => 'nullable|array',
             'komponen' => 'nullable|array',
             'berat_per_sajian' => 'nullable|array',
+            'berat_porsi_besar' => 'nullable|array',
+            'berat_porsi_kecil' => 'nullable|array',
         ]);
 
         $oldValues = $menu->toArray();
         $oldStatus = $menu->status;
 
-        $menuData = collect($validated)->only([
-            'nama_menu',
-            'tanggal_penyajian',
-            'jenis_makanan',
-            'ukuran_porsi_gram',
-            'jumlah_porsi_rencana',
-            'kelompok_penerima_id',
-        ])->toArray();
+        $gramBesar = (int) ($request->input('ukuran_porsi_besar_gram') ?: $request->input('ukuran_porsi_gram') ?: $menu->ukuran_porsi_besar_gram ?: 450);
+        $gramKecil = (int) ($request->input('ukuran_porsi_kecil_gram') ?: $menu->ukuran_porsi_kecil_gram ?: max(150, round($gramBesar * 0.68)));
+
+        if ($request->filled('porsi_besar_rencana') || $request->filled('porsi_kecil_rencana')) {
+            $rencanaBesar = (int) $request->input('porsi_besar_rencana', 0);
+            $rencanaKecil = (int) $request->input('porsi_kecil_rencana', 0);
+            $totalRencana = max(1, $rencanaBesar + $rencanaKecil);
+        } else {
+            $totalRencana = max(1, (int) ($request->input('jumlah_porsi_rencana') ?: $menu->jumlah_porsi_rencana ?: 300));
+            $rencanaKecil = (int) round($totalRencana * 0.35);
+            $rencanaBesar = max(0, $totalRencana - $rencanaKecil);
+        }
+
+        $menuData = [
+            'nama_menu' => $validated['nama_menu'],
+            'tanggal_penyajian' => $validated['tanggal_penyajian'],
+            'jenis_makanan' => $validated['jenis_makanan'],
+            'ukuran_porsi_gram' => $gramBesar,
+            'ukuran_porsi_besar_gram' => $gramBesar,
+            'ukuran_porsi_kecil_gram' => $gramKecil,
+            'jumlah_porsi_rencana' => $totalRencana,
+            'porsi_besar_rencana' => $rencanaBesar,
+            'porsi_kecil_rencana' => $rencanaKecil,
+            'kelompok_penerima_id' => $validated['kelompok_penerima_id'] ?? null,
+        ];
 
         if ($fotoPath = $this->handleFotoMenuUpload($request)) {
             $menuData['foto_menu'] = $fotoPath;
@@ -310,15 +355,28 @@ class AdminController extends Controller
         return redirect()->route('admin.bahan.index')->with('success', 'Bahan baku berhasil dihapus.');
     }
 
-    // --- PENERIMA DAN PORSI ---
+    // --- PENERIMA DAN PORSI (PORSI BESAR & PORSI KECIL) ---
     public function penerimaPorsi(Request $request)
     {
         $kelompokList = KelompokPenerima::orderBy('id')->get();
         $totalPenerima = $kelompokList->sum('jumlah_penerima');
+        $totalPenerimaBesar = $kelompokList->sum('penerima_porsi_besar');
+        $totalPenerimaKecil = $kelompokList->sum('penerima_porsi_kecil');
         $totalTerkemas = $kelompokList->sum('porsi_terkemas');
+        $totalTerkemasBesar = $kelompokList->sum('terkemas_porsi_besar');
+        $totalTerkemasKecil = $kelompokList->sum('terkemas_porsi_kecil');
         $editingKelompok = $request->filled('edit') ? KelompokPenerima::find($request->edit) : null;
 
-        return view('admin.penerima.index', compact('kelompokList', 'totalPenerima', 'totalTerkemas', 'editingKelompok'));
+        return view('admin.penerima.index', compact(
+            'kelompokList',
+            'totalPenerima',
+            'totalPenerimaBesar',
+            'totalPenerimaKecil',
+            'totalTerkemas',
+            'totalTerkemasBesar',
+            'totalTerkemasKecil',
+            'editingKelompok'
+        ));
     }
 
     public function storeKelompok(Request $request)
@@ -326,16 +384,53 @@ class AdminController extends Controller
         $validated = $request->validate([
             'nama_kelompok' => 'required|string',
             'kategori' => 'required|string',
-            'jumlah_penerima' => 'required|integer|min:1',
-            'porsi_terkemas' => 'required|integer|min:0',
+            'jumlah_penerima' => 'nullable|integer|min:1',
+            'penerima_porsi_besar' => 'nullable|integer|min:0',
+            'penerima_porsi_kecil' => 'nullable|integer|min:0',
+            'porsi_terkemas' => 'nullable|integer|min:0',
+            'terkemas_porsi_besar' => 'nullable|integer|min:0',
+            'terkemas_porsi_kecil' => 'nullable|integer|min:0',
             'titik_antar' => 'required|string',
             'estimasi_waktu_tempuh_menit' => 'required|integer|min:1',
         ]);
 
-        $kelompok = KelompokPenerima::create($validated);
+        if ($request->filled('penerima_porsi_besar') || $request->filled('penerima_porsi_kecil')) {
+            $pBesar = (int) $request->input('penerima_porsi_besar', 0);
+            $pKecil = (int) $request->input('penerima_porsi_kecil', 0);
+            $totalP = max(1, $pBesar + $pKecil);
+        } else {
+            $totalP = max(1, (int) $request->input('jumlah_penerima', 100));
+            $pKecil = (int) round($totalP * 0.35);
+            $pBesar = max(0, $totalP - $pKecil);
+        }
+
+        if ($request->filled('terkemas_porsi_besar') || $request->filled('terkemas_porsi_kecil')) {
+            $kBesar = (int) $request->input('terkemas_porsi_besar', 0);
+            $kKecil = (int) $request->input('terkemas_porsi_kecil', 0);
+            $totalK = max(0, $kBesar + $kKecil);
+        } else {
+            $totalK = max(0, (int) $request->input('porsi_terkemas', $totalP));
+            $kKecil = min($totalK, $pKecil);
+            $kBesar = max(0, $totalK - $kKecil);
+        }
+
+        $payload = [
+            'nama_kelompok' => $validated['nama_kelompok'],
+            'kategori' => $validated['kategori'],
+            'jumlah_penerima' => $totalP,
+            'penerima_porsi_besar' => $pBesar,
+            'penerima_porsi_kecil' => $pKecil,
+            'porsi_terkemas' => $totalK,
+            'terkemas_porsi_besar' => $kBesar,
+            'terkemas_porsi_kecil' => $kKecil,
+            'titik_antar' => $validated['titik_antar'],
+            'estimasi_waktu_tempuh_menit' => $validated['estimasi_waktu_tempuh_menit'],
+        ];
+
+        $kelompok = KelompokPenerima::create($payload);
         AuditLog::log('tambah_kelompok_penerima', 'kelompok_penerima', (string)$kelompok->id, null, $kelompok->toArray());
 
-        return redirect()->route('admin.penerima.index')->with('success', 'Kelompok penerima berhasil ditambahkan.');
+        return redirect()->route('admin.penerima.index')->with('success', 'Kelompok penerima (Porsi Besar & Kecil) berhasil ditambahkan.');
     }
 
     public function updateKelompok(Request $request, KelompokPenerima $kelompok)
@@ -343,17 +438,54 @@ class AdminController extends Controller
         $validated = $request->validate([
             'nama_kelompok' => 'required|string',
             'kategori' => 'required|string',
-            'jumlah_penerima' => 'required|integer|min:1',
-            'porsi_terkemas' => 'required|integer|min:0',
+            'jumlah_penerima' => 'nullable|integer|min:1',
+            'penerima_porsi_besar' => 'nullable|integer|min:0',
+            'penerima_porsi_kecil' => 'nullable|integer|min:0',
+            'porsi_terkemas' => 'nullable|integer|min:0',
+            'terkemas_porsi_besar' => 'nullable|integer|min:0',
+            'terkemas_porsi_kecil' => 'nullable|integer|min:0',
             'titik_antar' => 'required|string',
             'estimasi_waktu_tempuh_menit' => 'required|integer|min:1',
         ]);
 
+        if ($request->filled('penerima_porsi_besar') || $request->filled('penerima_porsi_kecil')) {
+            $pBesar = (int) $request->input('penerima_porsi_besar', 0);
+            $pKecil = (int) $request->input('penerima_porsi_kecil', 0);
+            $totalP = max(1, $pBesar + $pKecil);
+        } else {
+            $totalP = max(1, (int) $request->input('jumlah_penerima', $kelompok->jumlah_penerima));
+            $pKecil = (int) round($totalP * 0.35);
+            $pBesar = max(0, $totalP - $pKecil);
+        }
+
+        if ($request->filled('terkemas_porsi_besar') || $request->filled('terkemas_porsi_kecil')) {
+            $kBesar = (int) $request->input('terkemas_porsi_besar', 0);
+            $kKecil = (int) $request->input('terkemas_porsi_kecil', 0);
+            $totalK = max(0, $kBesar + $kKecil);
+        } else {
+            $totalK = max(0, (int) $request->input('porsi_terkemas', $kelompok->porsi_terkemas));
+            $kKecil = min($totalK, $pKecil);
+            $kBesar = max(0, $totalK - $kKecil);
+        }
+
+        $payload = [
+            'nama_kelompok' => $validated['nama_kelompok'],
+            'kategori' => $validated['kategori'],
+            'jumlah_penerima' => $totalP,
+            'penerima_porsi_besar' => $pBesar,
+            'penerima_porsi_kecil' => $pKecil,
+            'porsi_terkemas' => $totalK,
+            'terkemas_porsi_besar' => $kBesar,
+            'terkemas_porsi_kecil' => $kKecil,
+            'titik_antar' => $validated['titik_antar'],
+            'estimasi_waktu_tempuh_menit' => $validated['estimasi_waktu_tempuh_menit'],
+        ];
+
         $old = $kelompok->toArray();
-        $kelompok->update($validated);
+        $kelompok->update($payload);
         AuditLog::log('ubah_kelompok_penerima', 'kelompok_penerima', (string)$kelompok->id, $old, $kelompok->fresh()->toArray());
 
-        return redirect()->route('admin.penerima.index')->with('success', 'Data kelompok penerima berhasil diperbarui.');
+        return redirect()->route('admin.penerima.index')->with('success', 'Data kelompok penerima (Porsi Besar & Kecil) berhasil diperbarui.');
     }
 
     public function destroyKelompok(KelompokPenerima $kelompok)
@@ -636,11 +768,16 @@ class AdminController extends Controller
             // Pastikan titik pengantaran tersedia ketika mencatat pengantaran
             if ($validated['tahap'] === 'pengantaran' && $record->pengantaranTitiks()->count() === 0) {
                 foreach (KelompokPenerima::all() as $kel) {
+                    $bDikirim = $kel->terkemas_porsi_besar ?: $kel->penerima_porsi_besar;
+                    $kDikirim = $kel->terkemas_porsi_kecil ?: $kel->penerima_porsi_kecil;
+                    $totDikirim = ($bDikirim + $kDikirim) > 0 ? ($bDikirim + $kDikirim) : ($kel->porsi_terkemas ?: $kel->jumlah_penerima);
                     PengantaranTitik::create([
                         'alur_operasional_id' => $record->id,
                         'kelompok_penerima_id' => $kel->id,
                         'petugas_antar' => $validated['petugas_aktual'],
-                        'porsi_dikirim' => $kel->porsi_terkemas ?: $kel->jumlah_penerima,
+                        'porsi_dikirim' => $totDikirim,
+                        'porsi_besar_dikirim' => $bDikirim,
+                        'porsi_kecil_dikirim' => $kDikirim,
                         'waktu_berangkat_aktual' => $mulaiAt,
                         'waktu_tiba_aktual' => $selesaiAt,
                         'status_antar' => 'Diterima',
@@ -655,22 +792,222 @@ class AdminController extends Controller
 
         $menu = Menu::find($validated['menu_id']);
 
-        // Pemicu otomatis (FR-028 & FR-025):
-        if ($validated['tahap'] === 'pengemasan' && $selesaiAt) {
-            $this->predictionService->jalankanPrediksi($menu, $validated['batch_no']);
-        }
-
-        if ($validated['tahap'] === 'pengantaran' && $selesaiAt) {
-            $this->kpiService->hitungKpi($menu, $validated['batch_no']);
+        // Pemicu otomatis pra-distribusi khusus Random Forest (KPI dievaluasi terpisah 1x seminggu):
+        if (in_array($validated['tahap'], ['pengemasan', 'pengantaran'], true) && $selesaiAt) {
             $this->predictionService->jalankanPrediksi($menu, $validated['batch_no']);
         }
 
         $msg = "Tahap {$validated['tahap']} berhasil dicatat.";
         if ($isTerlambat) {
-            $msg .= ' Status ditandai TERLAMBAT karena melewati target batas waktu jadwal + toleransi (FR-026).';
+            $msg .= ' Status ditandai TERLAMBAT karena melewati target batas waktu jadwal + toleransi.';
         }
 
         return redirect()->route('admin.tahap.index', ['menu_id' => $validated['menu_id'], 'batch_no' => $validated['batch_no']])
+            ->with('success', $msg);
+    }
+
+    /**
+     * Pencatatan Tahap Otomatis 1-Klik (Mulai Sekarang / Selesai Sekarang & Hitung Durasi Otomatis)
+     */
+    public function aksiCepatTahap(Request $request)
+    {
+        $validated = $request->validate([
+            'menu_id' => 'required|exists:menus,id',
+            'batch_no' => 'required|string',
+            'tahap' => 'required|in:terima_bahan,pengolahan,pengemasan,pengantaran',
+            'aksi' => 'required|in:mulai,selesai,komponen',
+            'komponen' => 'nullable|in:nasi,lauk,sayur',
+        ]);
+
+        $menu = Menu::findOrFail($validated['menu_id']);
+        $batchNo = $validated['batch_no'];
+        $tahap = $validated['tahap'];
+        $now = Carbon::now();
+        $tanggal = optional($menu->tanggal_penyajian)->format('Y-m-d') ?: $now->toDateString();
+
+        $labelMap = [
+            'terima_bahan' => 'Terima bahan',
+            'pengolahan' => 'Olah',
+            'pengemasan' => 'Kemas',
+            'pengantaran' => 'Distribusi',
+        ];
+        $tahapLabel = $labelMap[$tahap] ?? $tahap;
+
+        // Ambil nama petugas dari jadwal rencana jika tersedia, atau nama akun login
+        $jadwalTerkait = JadwalProduksi::where('menu_id', $menu->id)
+            ->where('batch_no', $batchNo)
+            ->where('tahap', 'LIKE', '%' . $tahap . '%')
+            ->first();
+        $defaultPetugas = $jadwalTerkait?->petugas_rencana ?: (auth()->user()?->name ?: 'Petugas Dapur SPPG');
+
+        $existing = AlurOperasional::where('menu_id', $menu->id)
+            ->where('batch_no', $batchNo)
+            ->where('tahap', $tahap)
+            ->first();
+
+        if ($validated['aksi'] === 'komponen' && !empty($validated['komponen'])) {
+            $komp = $validated['komponen'];
+            $matangAt = Carbon::parse($tanggal . ' ' . $now->format('H:i:s'));
+            $field = 'waktu_matang_' . $komp;
+
+            $olahRec = AlurOperasional::firstOrNew([
+                'menu_id' => $menu->id,
+                'batch_no' => $batchNo,
+                'tahap' => 'pengolahan',
+            ]);
+            if (!$olahRec->exists) {
+                $olahRec->tanggal = $tanggal;
+                $olahRec->waktu_mulai_aktual = $matangAt;
+                $olahRec->petugas_aktual = $defaultPetugas;
+                $olahRec->porsi_terkemas = $menu->jumlah_porsi_rencana;
+                $olahRec->status_tahap = 'berlangsung';
+            }
+            $olahRec->{$field} = $matangAt;
+
+            $candidates = array_filter([
+                $olahRec->waktu_matang_nasi ? Carbon::parse($olahRec->waktu_matang_nasi) : null,
+                $olahRec->waktu_matang_lauk ? Carbon::parse($olahRec->waktu_matang_lauk) : null,
+                $olahRec->waktu_matang_sayur ? Carbon::parse($olahRec->waktu_matang_sayur) : null,
+            ]);
+            $olahRec->waktu_matang_terakhir = collect($candidates)->sortByDesc(fn ($dt) => $dt->timestamp)->first();
+            $olahRec->save();
+
+            AuditLog::log('matang_komponen_cepat', 'alur_operasional', (string) $olahRec->id, null, $olahRec->toArray());
+
+            return redirect()->route('admin.tahap.index', ['menu_id' => $menu->id, 'batch_no' => $batchNo])
+                ->with('success', 'Waktu matang ' . ucfirst($komp) . ' dicatat otomatis pukul ' . $matangAt->format('H.i') . ' WITA (Batas konsumsi aman: ' . $matangAt->copy()->addHours(4)->format('H.i') . ' WITA).');
+        }
+
+        if ($validated['aksi'] === 'mulai') {
+            $mulaiAt = Carbon::parse($tanggal . ' ' . $now->format('H:i:s'));
+            $record = DB::transaction(function () use ($menu, $batchNo, $tahap, $tanggal, $mulaiAt, $existing, $defaultPetugas) {
+                $rec = AlurOperasional::updateOrCreate(
+                    [
+                        'menu_id' => $menu->id,
+                        'batch_no' => $batchNo,
+                        'tahap' => $tahap,
+                    ],
+                    [
+                        'tanggal' => $tanggal,
+                        'waktu_mulai_aktual' => $mulaiAt,
+                        'waktu_selesai_aktual' => null,
+                        'petugas_aktual' => $existing?->petugas_aktual ?: $defaultPetugas,
+                        'porsi_terkemas' => $existing?->porsi_terkemas ?: $menu->jumlah_porsi_rencana,
+                        'status_tahap' => 'berlangsung',
+                    ]
+                );
+                AuditLog::log('mulai_tahap_cepat', 'alur_operasional', (string) $rec->id, null, $rec->toArray());
+                return $rec;
+            });
+
+            return redirect()->route('admin.tahap.index', ['menu_id' => $menu->id, 'batch_no' => $batchNo])
+                ->with('success', "Tahap {$tahapLabel} dimulai otomatis pukul {$mulaiAt->format('H.i')} WITA. Klik 'Selesai Sekarang' saat tahap rampung.");
+        }
+
+        // Aksi = selesai -> catat waktu selesai otomatis & hitung durasi
+        $urutan = ['terima_bahan' => 1, 'pengolahan' => 2, 'pengemasan' => 3, 'pengantaran' => 4];
+        $currentOrder = $urutan[$tahap];
+        $prevSelesaiAt = null;
+
+        if ($currentOrder > 1) {
+            $prevTahapName = array_search($currentOrder - 1, $urutan, true);
+            $prevRecorded = AlurOperasional::where('menu_id', $menu->id)
+                ->where('batch_no', $batchNo)
+                ->where('tahap', $prevTahapName)
+                ->whereNotNull('waktu_selesai_aktual')
+                ->first();
+
+            if (!$prevRecorded) {
+                session()->flash('warning', "Peringatan urutan tahap: Tahap sebelumnya ({$prevTahapName}) belum tercatat selesai.");
+            } else {
+                $prevSelesaiAt = Carbon::parse($prevRecorded->waktu_selesai_aktual);
+            }
+        }
+
+        $selesaiAt = Carbon::parse($tanggal . ' ' . $now->format('H:i:s'));
+
+        // Tentukan waktu mulai secara cerdas jika belum klik Mulai sebelumnya
+        if ($existing && $existing->waktu_mulai_aktual) {
+            $mulaiAt = Carbon::parse($existing->waktu_mulai_aktual);
+        } elseif ($prevSelesaiAt && $prevSelesaiAt->lte($selesaiAt)) {
+            $mulaiAt = $prevSelesaiAt->copy();
+        } elseif ($jadwalTerkait && $jadwalTerkait->waktu_mulai_rencana) {
+            $rencanaMulai = $this->parseStageDateTime($tanggal, substr((string) $jadwalTerkait->waktu_mulai_rencana, 0, 5));
+            $mulaiAt = ($rencanaMulai && $rencanaMulai->lte($selesaiAt)) ? $rencanaMulai : $selesaiAt->copy();
+        } else {
+            $mulaiAt = $selesaiAt->copy();
+        }
+
+        if ($selesaiAt->lt($mulaiAt)) {
+            $selesaiAt = $mulaiAt->copy();
+        }
+
+        $durasiMenit = (int) round($mulaiAt->diffInMinutes($selesaiAt));
+        $isTerlambat = $this->isTahapTerlambat((int) $menu->id, $batchNo, $tanggal, $tahap, $selesaiAt);
+
+        $payload = [
+            'tanggal' => $tanggal,
+            'waktu_mulai_aktual' => $mulaiAt,
+            'waktu_selesai_aktual' => $selesaiAt,
+            'petugas_aktual' => $existing?->petugas_aktual ?: $defaultPetugas,
+            'porsi_terkemas' => $existing?->porsi_terkemas ?: $menu->jumlah_porsi_rencana,
+            'status_tahap' => $isTerlambat ? 'terlambat' : 'selesai',
+        ];
+
+        // Jika tahap pengolahan selesai, otomatis catat waktu matang komponen & batas aman 4 jam
+        if ($tahap === 'pengolahan') {
+            $payload['waktu_matang_nasi'] = $existing?->waktu_matang_nasi ?: $selesaiAt;
+            $payload['waktu_matang_lauk'] = $existing?->waktu_matang_lauk ?: $selesaiAt;
+            $payload['waktu_matang_sayur'] = $existing?->waktu_matang_sayur ?: $selesaiAt;
+            $payload['waktu_matang_terakhir'] = $selesaiAt;
+        }
+
+        DB::transaction(function () use ($menu, $batchNo, $tahap, $payload, $mulaiAt, $selesaiAt) {
+            $record = AlurOperasional::updateOrCreate(
+                [
+                    'menu_id' => $menu->id,
+                    'batch_no' => $batchNo,
+                    'tahap' => $tahap,
+                ],
+                $payload
+            );
+
+            if ($tahap === 'pengantaran' && $record->pengantaranTitiks()->count() === 0) {
+                foreach (KelompokPenerima::all() as $kel) {
+                    $bDikirim = $kel->terkemas_porsi_besar ?: $kel->penerima_porsi_besar;
+                    $kDikirim = $kel->terkemas_porsi_kecil ?: $kel->penerima_porsi_kecil;
+                    $totDikirim = ($bDikirim + $kDikirim) > 0 ? ($bDikirim + $kDikirim) : ($kel->porsi_terkemas ?: $kel->jumlah_penerima);
+                    PengantaranTitik::create([
+                        'alur_operasional_id' => $record->id,
+                        'kelompok_penerima_id' => $kel->id,
+                        'petugas_antar' => $payload['petugas_aktual'],
+                        'porsi_dikirim' => $totDikirim,
+                        'porsi_besar_dikirim' => $bDikirim,
+                        'porsi_kecil_dikirim' => $kDikirim,
+                        'waktu_berangkat_aktual' => $mulaiAt,
+                        'waktu_tiba_aktual' => $selesaiAt,
+                        'status_antar' => 'Diterima',
+                    ]);
+                }
+            }
+
+            AuditLog::log('selesai_tahap_cepat', 'alur_operasional', (string) $record->id, null, $record->toArray());
+        });
+
+        if (in_array($tahap, ['pengemasan', 'pengantaran'], true)) {
+            $this->predictionService->jalankanPrediksi($menu, $batchNo);
+        }
+
+        $infoDurasi = "{$mulaiAt->format('H.i')} – {$selesaiAt->format('H.i')} WITA ({$durasiMenit} menit)";
+        $msg = "Tahap {$tahapLabel} selesai dicatat otomatis: {$infoDurasi}.";
+        if ($tahap === 'pengolahan') {
+            $msg .= ' Batas aman konsumsi 4 jam hingga ' . $selesaiAt->copy()->addHours(4)->format('H.i') . ' WITA.';
+        }
+        if ($isTerlambat) {
+            $msg .= ' Status ditandai TERLAMBAT karena melewati target jadwal.';
+        }
+
+        return redirect()->route('admin.tahap.index', ['menu_id' => $menu->id, 'batch_no' => $batchNo])
             ->with('success', $msg);
     }
 
@@ -678,39 +1015,91 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'petugas_antar' => 'nullable|string',
-            'porsi_dikirim' => 'required|integer|min:0',
+            'porsi_dikirim' => 'nullable|integer|min:0',
+            'porsi_besar_dikirim' => 'nullable|integer|min:0',
+            'porsi_kecil_dikirim' => 'nullable|integer|min:0',
             'waktu_berangkat_aktual' => 'nullable|string',
             'waktu_tiba_aktual' => 'nullable|string',
             'petugas_penerima' => 'nullable|string',
             'status_antar' => 'required|string',
         ]);
 
+        if ($request->filled('porsi_besar_dikirim') || $request->filled('porsi_kecil_dikirim')) {
+            $besar = (int) $request->input('porsi_besar_dikirim', 0);
+            $kecil = (int) $request->input('porsi_kecil_dikirim', 0);
+            $totalDikirim = $besar + $kecil;
+        } else {
+            $totalDikirim = (int) $request->input('porsi_dikirim', $titik->porsi_dikirim);
+            $kecil = (int) round($totalDikirim * 0.35);
+            $besar = max(0, $totalDikirim - $kecil);
+        }
+
         $alur = $titik->alurOperasional;
         $tanggal = $alur?->tanggal ? Carbon::parse($alur->tanggal)->format('Y-m-d') : Carbon::today()->format('Y-m-d');
 
         $old = $titik->toArray();
-        DB::transaction(function () use ($titik, $validated, $tanggal, $request, $alur, $old) {
+        DB::transaction(function () use ($titik, $validated, $besar, $kecil, $totalDikirim, $tanggal, $request, $old) {
             $titik->update([
                 'petugas_antar' => $validated['petugas_antar'] ?? $titik->petugas_antar,
-                'porsi_dikirim' => $validated['porsi_dikirim'],
+                'porsi_dikirim' => $totalDikirim,
+                'porsi_besar_dikirim' => $besar,
+                'porsi_kecil_dikirim' => $kecil,
                 'waktu_berangkat_aktual' => $this->parseStageDateTime($tanggal, $request->waktu_berangkat_aktual),
                 'waktu_tiba_aktual' => $this->parseStageDateTime($tanggal, $request->waktu_tiba_aktual),
                 'petugas_penerima' => $validated['petugas_penerima'] ?? null,
                 'status_antar' => $validated['status_antar'],
             ]);
 
-            if ($alur && $alur->menu) {
-                $this->kpiService->hitungKpi($alur->menu, $alur->batch_no);
-            }
-
             AuditLog::log('update_pengantaran_titik', 'pengantaran_titik', (string)$titik->id, $old, $titik->fresh()->toArray());
         });
 
-        return back()->with('success', 'Realisasi pengantaran titik berhasil diperbarui.');
+        return back()->with('success', 'Realisasi pengantaran titik (Porsi Besar & Kecil) berhasil diperbarui.');
     }
 
-    // --- KPI & PREDIKSI RISIKO ---
-    public function kpiPrediksi(Request $request)
+    // --- KPI MINGGUAN (EVALUASI 1X SEMINGGU) ---
+    public function kpiMingguan(Request $request)
+    {
+        $daftarMinggu = $this->kpiService->daftarMingguEvaluasi();
+        $weekStart = $request->input('week_start', Carbon::today()->startOfWeek(Carbon::MONDAY)->toDateString());
+        $rekapMinggu = $this->kpiService->hitungRekapMingguan($weekStart, false);
+
+        // Riwayat ringkas per minggu (maksimal 6 minggu)
+        $riwayatMingguan = [];
+        foreach (array_slice($daftarMinggu, 0, 6) as $wm) {
+            $riwayatMingguan[] = $this->kpiService->hitungRekapMingguan($wm['week_start'], false);
+        }
+
+        return view('admin.kpi.index', compact(
+            'daftarMinggu',
+            'weekStart',
+            'rekapMinggu',
+            'riwayatMingguan'
+        ));
+    }
+
+    public function hitungUlangKpi(Request $request)
+    {
+        $weekStart = $request->input('week_start', Carbon::today()->startOfWeek(Carbon::MONDAY)->toDateString());
+        $rekap = $this->kpiService->hitungRekapMingguan($weekStart, true);
+
+        if ($rekap['jumlah_batch'] === 0) {
+            return redirect()->route('admin.kpi.index', ['week_start' => $rekap['week_start']])
+                ->with('error', 'Belum ada batch yang menyelesaikan tahap pengemasan pada periode minggu ' . $rekap['label_minggu'] . '.');
+        }
+
+        AuditLog::log('rekap_kpi_mingguan', 'kpi_mingguan', $rekap['week_start'], null, [
+            'week_start' => $rekap['week_start'],
+            'jumlah_batch' => $rekap['jumlah_batch'],
+            'skor_total' => $rekap['skor_total'],
+            'kategori_kpi' => $rekap['kategori_kpi'],
+        ]);
+
+        return redirect()->route('admin.kpi.index', ['week_start' => $rekap['week_start']])
+            ->with('success', 'Evaluasi KPI Mingguan (' . $rekap['label_minggu'] . ') berhasil direkap dari ' . $rekap['jumlah_batch'] . ' batch produksi.');
+    }
+
+    // --- PREDIKSI RISIKO RANDOM FOREST (TERPISAH DARI KPI) ---
+    public function prediksiRisiko(Request $request)
     {
         $today = Carbon::today();
         $menus = Menu::orderByDesc('tanggal_penyajian')->get();
@@ -720,13 +1109,13 @@ class AdminController extends Controller
                 ?? Menu::with('menuBahans.bahanBaku')->latest()->first());
 
         $batchNo = $request->input('batch_no', 'Tahap 1');
-        $kpi = null;
+        $prediksi = null;
         $alurs = collect();
         $titikEvaluasi = [];
         $kelompoks = KelompokPenerima::all();
 
         if ($activeMenu) {
-            $kpi = KpiPrediksi::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->first();
+            $prediksi = KpiPrediksi::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->first();
             $alurs = AlurOperasional::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->get()->keyBy('tahap');
             $alurOlah = $alurs->get('pengolahan');
             $alurKemas = $alurs->get('pengemasan');
@@ -744,23 +1133,27 @@ class AdminController extends Controller
             }
         }
 
-        $kpiHistory = KpiPrediksi::with('menu')->orderByDesc('tanggal')->orderByDesc('id')->get();
+        $prediksiHistory = KpiPrediksi::with('menu')
+            ->whereNotNull('kelas_prediksi')
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->get();
         $kurangData = !$alurs->has('pengemasan');
 
-        return view('admin.kpi.index', compact(
+        return view('admin.prediksi.index', compact(
             'menus',
             'activeMenu',
             'batchNo',
-            'kpi',
+            'prediksi',
             'alurs',
             'kelompoks',
             'titikEvaluasi',
-            'kpiHistory',
+            'prediksiHistory',
             'kurangData'
         ));
     }
 
-    public function hitungUlangKpi(Request $request)
+    public function hitungUlangPrediksi(Request $request)
     {
         $request->validate([
             'menu_id' => 'required|exists:menus,id',
@@ -768,16 +1161,15 @@ class AdminController extends Controller
         ]);
 
         $menu = Menu::with('menuBahans.bahanBaku')->findOrFail($request->menu_id);
-        $kpi = $this->kpiService->hitungKpi($menu, $request->batch_no);
-        $prediksi = $this->predictionService->jalankanPrediksi($menu, $request->batch_no);
+        $hasil = $this->predictionService->jalankanPrediksi($menu, $request->batch_no);
 
-        if (!$kpi || ($prediksi['status'] ?? '') === 'data_tidak_lengkap') {
-            return redirect()->route('admin.kpi.index', ['menu_id' => $menu->id, 'batch_no' => $request->batch_no])
-                ->with('error', 'Data tahap pengemasan atau waktu matang belum lengkap untuk menghitung KPI dan prediksi (FR-027/FR-030).');
+        if (($hasil['status'] ?? '') === 'data_tidak_lengkap') {
+            return redirect()->route('admin.prediksi.index', ['menu_id' => $menu->id, 'batch_no' => $request->batch_no])
+                ->with('error', $hasil['message'] ?? 'Data tahap pengemasan atau waktu matang belum lengkap untuk menjalankan prediksi Random Forest.');
         }
 
-        return redirect()->route('admin.kpi.index', ['menu_id' => $menu->id, 'batch_no' => $request->batch_no])
-            ->with('success', 'Skor KPI & prediksi kelayakan konsumsi berhasil diperbarui.');
+        return redirect()->route('admin.prediksi.index', ['menu_id' => $menu->id, 'batch_no' => $request->batch_no])
+            ->with('success', 'Prediksi kelayakan konsumsi Random Forest berhasil diperbarui.');
     }
 
     // --- HELPER PRIVAT ---
@@ -802,14 +1194,25 @@ class AdminController extends Controller
             return;
         }
         $menu->menuBahans()->delete();
+        $rasioKecil = ($menu->ukuran_porsi_besar_gram > 0)
+            ? ($menu->ukuran_porsi_kecil_gram / $menu->ukuran_porsi_besar_gram)
+            : 0.68;
+
         foreach ($request->bahan_ids as $index => $bahanId) {
             if ($bahanId) {
+                $gramBesar = (float) ($request->berat_porsi_besar[$index] ?? $request->berat_per_sajian[$index] ?? 0);
+                $gramKecil = isset($request->berat_porsi_kecil[$index]) && $request->berat_porsi_kecil[$index] !== ''
+                    ? (float) $request->berat_porsi_kecil[$index]
+                    : round($gramBesar * $rasioKecil, 1);
+
                 $menu->menuBahans()->create([
                     'bahan_baku_id' => $bahanId,
                     'jumlah_batch' => $request->jumlah_batch[$index] ?? 1,
                     'satuan' => $request->satuan[$index] ?? 'kg',
                     'komponen' => $request->komponen[$index] ?? 'Lauk',
-                    'berat_per_sajian_gram' => $request->berat_per_sajian[$index] ?? 0,
+                    'berat_per_sajian_gram' => $gramBesar,
+                    'berat_porsi_besar_gram' => $gramBesar,
+                    'berat_porsi_kecil_gram' => $gramKecil,
                 ]);
             }
         }

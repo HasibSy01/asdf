@@ -122,13 +122,15 @@ class KpiService
             $kategori = 'Prioritas perbaikan';
         }
 
+        $tanggalRecord = $alurKemas?->tanggal ?? $menu->tanggal_penyajian ?? $today;
+
         return KpiPrediksi::updateOrCreate(
             [
                 'menu_id' => $menu->id,
                 'batch_no' => $batchNo,
             ],
             [
-                'tanggal' => $today,
+                'tanggal' => $tanggalRecord,
                 'kelompok_penerima_id' => $kelompokPenerimaId ?: $menu->kelompok_penerima_id,
                 'skor_sr' => $skorSr,
                 'skor_sx' => $skorSx,
@@ -142,6 +144,132 @@ class KpiService
                 'is_warning_kedaluwarsa' => $hasExpiredIngredient,
             ]
         );
+    }
+
+    /**
+     * Hitung / ambil rekapitulasi KPI Mingguan (evaluasi cukup 1x seminggu: Senin s/d Minggu)
+     */
+    public function hitungRekapMingguan(?string $weekStartStr = null, bool $recalculateBatches = false): array
+    {
+        $startOfWeek = $weekStartStr
+            ? Carbon::parse($weekStartStr)->startOfWeek(Carbon::MONDAY)
+            : Carbon::today()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $startDate = $startOfWeek->toDateString();
+        $endDate = $endOfWeek->toDateString();
+
+        if ($recalculateBatches) {
+            $alurPairs = AlurOperasional::where('tahap', 'pengemasan')
+                ->whereNotNull('waktu_selesai_aktual')
+                ->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal', [$startDate, $endDate])
+                      ->orWhereHas('menu', fn ($mq) => $mq->whereBetween('tanggal_penyajian', [$startDate, $endDate]));
+                })
+                ->get(['menu_id', 'batch_no'])
+                ->unique(fn ($item) => $item->menu_id . '|' . $item->batch_no);
+
+            foreach ($alurPairs as $pair) {
+                $m = Menu::with('menuBahans.bahanBaku')->find($pair->menu_id);
+                if ($m) {
+                    $this->hitungKpi($m, $pair->batch_no);
+                }
+            }
+        }
+
+        $batchRecords = KpiPrediksi::with(['menu', 'kelompokPenerima'])
+            ->whereNotNull('skor_total')
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('tanggal', [$startDate, $endDate])
+                  ->orWhereHas('menu', fn ($mq) => $mq->whereBetween('tanggal_penyajian', [$startDate, $endDate]));
+            })
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id')
+            ->get();
+
+        $thresholds = config('mbg.kpi.thresholds');
+        $count = $batchRecords->count();
+
+        if ($count > 0) {
+            $avgSr = round((float) $batchRecords->avg('skor_sr'), 2);
+            $avgSx = round((float) $batchRecords->avg('skor_sx'), 2);
+            $avgSp = round((float) $batchRecords->avg('skor_sp'), 2);
+            $avgSq = round((float) $batchRecords->avg('skor_sq'), 2);
+            $avgSk = round((float) $batchRecords->avg('skor_sk'), 2);
+            $avgSw = round((float) $batchRecords->avg('skor_sw'), 2);
+            $avgSb = round((float) $batchRecords->avg('skor_sb'), 2);
+            $avgTotal = round((float) $batchRecords->avg('skor_total'), 2);
+
+            if ($avgTotal >= (float) ($thresholds['baik_min'] ?? 90.0)) {
+                $kategoriMingguan = 'Baik';
+            } elseif ($avgTotal >= (float) ($thresholds['perlu_perbaikan_min'] ?? 75.0)) {
+                $kategoriMingguan = 'Perlu perbaikan';
+            } else {
+                $kategoriMingguan = 'Prioritas perbaikan';
+            }
+
+            $warningKedaluwarsa = $batchRecords->contains(fn ($r) => (bool) $r->is_warning_kedaluwarsa || ((float) $r->skor_sx < 100));
+            $terakhirDihitung = $batchRecords->max('updated_at');
+        } else {
+            $avgSr = $avgSx = $avgSp = $avgSq = $avgSk = $avgSw = $avgSb = $avgTotal = null;
+            $kategoriMingguan = null;
+            $warningKedaluwarsa = false;
+            $terakhirDihitung = null;
+        }
+
+        return [
+            'week_start' => $startDate,
+            'week_end' => $endDate,
+            'label_minggu' => $startOfWeek->translatedFormat('d M Y') . ' – ' . $endOfWeek->translatedFormat('d M Y'),
+            'jumlah_batch' => $count,
+            'skor_sr' => $avgSr,
+            'skor_sx' => $avgSx,
+            'skor_sp' => $avgSp,
+            'skor_sq' => $avgSq,
+            'skor_sk' => $avgSk,
+            'skor_sw' => $avgSw,
+            'skor_sb' => $avgSb,
+            'skor_total' => $avgTotal,
+            'kategori_kpi' => $kategoriMingguan,
+            'is_warning_kedaluwarsa' => $warningKedaluwarsa,
+            'terakhir_dihitung' => $terakhirDihitung,
+            'batch_records' => $batchRecords,
+        ];
+    }
+
+    /**
+     * Daftar opsi minggu evaluasi (6 minggu terakhir + minggu yang memiliki data)
+     */
+    public function daftarMingguEvaluasi(): array
+    {
+        $weeks = [];
+        $currentMonday = Carbon::today()->startOfWeek(Carbon::MONDAY);
+
+        for ($i = 0; $i < 6; $i++) {
+            $mon = $currentMonday->copy()->subWeeks($i);
+            $sun = $mon->copy()->endOfWeek(Carbon::SUNDAY);
+            $key = $mon->toDateString();
+            $weeks[$key] = [
+                'week_start' => $key,
+                'label' => ($i === 0 ? 'Minggu Ini · ' : '') . $mon->translatedFormat('d M') . ' – ' . $sun->translatedFormat('d M Y'),
+            ];
+        }
+
+        foreach (KpiPrediksi::whereNotNull('skor_total')->pluck('tanggal') as $tgl) {
+            if (!$tgl) continue;
+            $mon = Carbon::parse($tgl)->startOfWeek(Carbon::MONDAY);
+            $sun = $mon->copy()->endOfWeek(Carbon::SUNDAY);
+            $key = $mon->toDateString();
+            if (!isset($weeks[$key])) {
+                $weeks[$key] = [
+                    'week_start' => $key,
+                    'label' => $mon->translatedFormat('d M') . ' – ' . $sun->translatedFormat('d M Y'),
+                ];
+            }
+        }
+
+        krsort($weeks);
+        return array_values($weeks);
     }
 
     /**

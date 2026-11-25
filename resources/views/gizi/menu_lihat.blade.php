@@ -61,7 +61,8 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1f3056] pb-3">
                 <h2 class="text-sm font-bold text-white">{{ $selectedMenu->nama_menu }}</h2>
                 <div class="text-xs text-slate-400">
-                    {{ $selectedMenu->jumlah_porsi_rencana }} sajian rencana &middot; &plusmn;{{ $selectedMenu->ukuran_porsi_gram }} g / sajian
+                    Porsi Besar: {{ $selectedMenu->porsi_besar_rencana }} (&plusmn;{{ $selectedMenu->ukuran_porsi_besar_gram ?: $selectedMenu->ukuran_porsi_gram }}g) &middot;
+                    Porsi Kecil: {{ $selectedMenu->porsi_kecil_rencana }} (&plusmn;{{ $selectedMenu->ukuran_porsi_kecil_gram ?: 300 }}g)
                 </div>
             </div>
 
@@ -73,7 +74,7 @@
                             <tr class="bg-[#182645] text-slate-300 font-semibold border-b border-[#1f3056]">
                                 <th class="py-3 px-4">Bahan / lot</th>
                                 <th class="py-3 px-4">Jumlah batch</th>
-                                <th class="py-3 px-4">Berat / sajian</th>
+                                <th class="py-3 px-4">Gram Porsi Besar / Kecil</th>
                                 <th class="py-3 px-4">Komponen</th>
                             </tr>
                         </thead>
@@ -84,7 +85,7 @@
                                         {{ $mb->bahanBaku?->nama_bahan ?? '-' }} &middot; {{ $mb->bahanBaku?->kode_lot ?? '-' }}
                                     </td>
                                     <td class="py-3.5 px-4">{{ $mb->jumlah_batch }} {{ $mb->satuan }}</td>
-                                    <td class="py-3.5 px-4">{{ $mb->berat_per_sajian_gram }} g</td>
+                                    <td class="py-3.5 px-4">{{ $mb->berat_porsi_besar_gram > 0 ? $mb->berat_porsi_besar_gram : $mb->berat_per_sajian_gram }} g / {{ $mb->berat_porsi_kecil_gram > 0 ? $mb->berat_porsi_kecil_gram : round($mb->berat_per_sajian_gram * 0.68, 1) }} g</td>
                                     <td class="py-3.5 px-4">{{ $mb->komponen }}</td>
                                 </tr>
                             @empty

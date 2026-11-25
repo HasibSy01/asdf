@@ -114,12 +114,20 @@
 
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                         <div class="p-3.5 rounded-2xl bg-[#FFFFFF] border border-[#164863]/12 shadow-sm">
-                            <div class="text-[11px] text-[#666666] font-semibold">Takaran Saji</div>
-                            <div class="text-lg sm:text-xl font-black text-[#000000] mt-0.5">&plusmn; {{ $menu->ukuran_porsi_gram }} g</div>
+                            <div class="text-[11px] text-[#666666] font-semibold">Takaran Saji (2 Porsi)</div>
+                            <div class="text-sm sm:text-base font-black text-[#000000] mt-0.5">
+                                Besar &plusmn;{{ $menu->ukuran_porsi_besar_gram ?: $menu->ukuran_porsi_gram }}g
+                            </div>
+                            <div class="text-[11px] font-bold text-[#164863]">
+                                Kecil &plusmn;{{ $menu->ukuran_porsi_kecil_gram ?: 300 }}g
+                            </div>
                         </div>
                         <div class="p-3.5 rounded-2xl bg-[#FFFFFF] border border-[#164863]/12 shadow-sm">
                             <div class="text-[11px] text-[#666666] font-semibold">Target Produksi</div>
                             <div class="text-lg sm:text-xl font-black text-[#5027EF] mt-0.5">{{ number_format($menu->jumlah_porsi_rencana, 0, ',', '.') }} porsi</div>
+                            <div class="text-[11px] font-semibold text-[#666666]">
+                                {{ $menu->porsi_besar_rencana }} Besar &middot; {{ $menu->porsi_kecil_rencana }} Kecil
+                            </div>
                         </div>
                         <div class="p-3.5 rounded-2xl bg-[#FFFFFF] border border-[#164863]/12 shadow-sm col-span-2 sm:col-span-1">
                             <div class="text-[11px] text-[#666666] font-semibold">Batas Konsumsi</div>
@@ -180,17 +188,25 @@
             <!-- 5 Nutrisi Kunci Bento Cards -->
             @if($hasilGizi)
             <section class="bg-[#FFFFFF] border border-[#164863]/10 p-6 sm:p-7 rounded-[24px] shadow-sm space-y-4">
-                <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center justify-between flex-wrap gap-3">
                     <div>
                         <h3 class="text-base sm:text-lg font-black text-[#000000]">Kandungan Gizi per 1 Sajian</h3>
-                        <p class="text-xs text-[#666666]">Akumulasi makronutrisi berdasarkan gramasi bahan penyusun per porsi</p>
+                        <p class="text-xs text-[#666666]" id="gizi-porsi-subtitle">Menampilkan takaran Porsi Besar (&plusmn;{{ $menu->ukuran_porsi_besar_gram ?: $menu->ukuran_porsi_gram }} g) &bull; Basis Rujukan 100g TKPI</p>
                     </div>
-                    <span class="px-3 py-1 rounded-full bg-[#164863]/10 text-[#164863] text-xs font-bold">
-                        Basis Rujukan 100g TKPI
-                    </span>
+                    <div class="inline-flex items-center bg-[#F7F6F2] p-1 rounded-full border border-[#164863]/15 gap-1">
+                        <button type="button" id="btn-porsi-besar" onclick="pilihPorsiPublik('besar')"
+                                class="px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#5027EF] text-[#FFFFFF] shadow-sm transition cursor-pointer border-0">
+                            Porsi Besar (&plusmn;{{ $menu->ukuran_porsi_besar_gram ?: $menu->ukuran_porsi_gram }}g)
+                        </button>
+                        <button type="button" id="btn-porsi-kecil" onclick="pilihPorsiPublik('kecil')"
+                                class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-transparent text-[#164863] hover:text-[#000000] transition cursor-pointer border-0">
+                            Porsi Kecil (&plusmn;{{ $menu->ukuran_porsi_kecil_gram ?: 300 }}g)
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+                <!-- Grid Gizi Porsi Besar -->
+                <div id="grid-gizi-besar" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
                     <div class="hover-lift bg-[#F7F6F2] border border-[#5027EF]/20 p-4 rounded-2xl flex flex-col justify-between">
                         <div class="flex items-center justify-between">
                             <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Energi Total</span>
@@ -261,6 +277,81 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Grid Gizi Porsi Kecil -->
+                @if(!empty($hasilGiziKecil))
+                <div id="grid-gizi-kecil" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+                    <div class="hover-lift bg-[#F7F6F2] border border-[#5027EF]/20 p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Energi Total</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#5027EF]"></span>
+                        </div>
+                        <div class="my-2">
+                            <span class="text-2xl sm:text-3xl font-black text-[#5027EF] tabular-nums">{{ $hasilGiziKecil['energi_kkal'] }}</span>
+                            <span class="text-xs font-semibold text-[#666666] block">kkal / porsi kecil</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-[#5027EF]/15 overflow-hidden">
+                            <div class="h-full w-3/5 bg-[#5027EF] rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="hover-lift bg-[#F7F6F2] border border-[#164863]/20 p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Protein</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#164863]"></span>
+                        </div>
+                        <div class="my-2">
+                            <span class="text-2xl sm:text-3xl font-black text-[#164863] tabular-nums">{{ $hasilGiziKecil['protein_g'] }}</span>
+                            <span class="text-xs font-semibold text-[#666666] block">gram</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-[#164863]/15 overflow-hidden">
+                            <div class="h-full w-3/5 bg-[#164863] rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="hover-lift bg-[#F7F6F2] border border-[#FFBD17] p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Lemak Sehat</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FFBD17]"></span>
+                        </div>
+                        <div class="my-2">
+                            <span class="text-2xl sm:text-3xl font-black text-[#000000] tabular-nums">{{ $hasilGiziKecil['lemak_g'] }}</span>
+                            <span class="text-xs font-semibold text-[#666666] block">gram</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-[#FFBD17]/30 overflow-hidden">
+                            <div class="h-full w-1/2 bg-[#FFBD17] rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="hover-lift bg-[#F7F6F2] border border-[#000000]/15 p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Karbohidrat</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#000000]"></span>
+                        </div>
+                        <div class="my-2">
+                            <span class="text-2xl sm:text-3xl font-black text-[#000000] tabular-nums">{{ $hasilGiziKecil['karbohidrat_g'] }}</span>
+                            <span class="text-xs font-semibold text-[#666666] block">gram</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-black/10 overflow-hidden">
+                            <div class="h-full w-3/5 bg-[#000000] rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div class="hover-lift bg-[#F7F6F2] border border-[#164863]/20 p-4 rounded-2xl flex flex-col justify-between col-span-2 sm:col-span-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-[#666666] uppercase tracking-wider font-bold">Serat Pangan</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#5027EF]"></span>
+                        </div>
+                        <div class="my-2">
+                            <span class="text-2xl sm:text-3xl font-black text-[#164863] tabular-nums">{{ $hasilGiziKecil['serat_g'] }}</span>
+                            <span class="text-xs font-semibold text-[#666666] block">gram</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-[#164863]/15 overflow-hidden">
+                            <div class="h-full w-2/5 bg-[#5027EF] rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </section>
             @endif
 
@@ -282,8 +373,12 @@
                                     {{ $mb->komponen }}
                                 </span>
                             </div>
-                            <div class="text-xs text-[#666666]">
-                                Takaran: <strong class="text-[#000000]">{{ $mb->berat_per_sajian_gram }} g/porsi</strong> &bull; Lot: <span class="font-mono font-semibold text-[#164863]">{{ $mb->bahanBaku?->kode_lot ?? '-' }}</span>
+                            <div class="text-xs text-[#666666] space-y-0.5">
+                                <div>
+                                    Takaran Besar: <strong class="text-[#000000]">{{ $mb->berat_porsi_besar_gram > 0 ? $mb->berat_porsi_besar_gram : $mb->berat_per_sajian_gram }} g</strong> &bull;
+                                    Kecil: <strong class="text-[#164863]">{{ $mb->berat_porsi_kecil_gram > 0 ? $mb->berat_porsi_kecil_gram : round($mb->berat_per_sajian_gram * 0.68, 1) }} g</strong>
+                                </div>
+                                <div>Lot: <span class="font-mono font-semibold text-[#164863]">{{ $mb->bahanBaku?->kode_lot ?? '-' }}</span></div>
                             </div>
                             <div class="text-[11px] text-[#666666] border-t border-black/10 pt-2 flex items-center justify-between">
                                 <span>Supplier: <strong class="text-[#000000]">{{ $mb->bahanBaku?->supplier ?? 'Penyedia Lokal' }}</strong></span>
@@ -357,5 +452,32 @@
         <p class="font-bold text-[#000000]">Satuan Pelayanan Pemenuhan Gizi (SPPG) Ujung Lare &middot; Kota Parepare, Sulawesi Selatan</p>
         <p class="text-[11px] text-[#666666] mt-1">Dikelola sejalan dengan UU Keterbukaan Informasi Publik (UU No. 14 Tahun 2008) &amp; Petunjuk Teknis Badan Gizi Nasional.</p>
     </footer>
+
+    @if($menu)
+    <script>
+        function pilihPorsiPublik(tipe) {
+            const gBesar = document.getElementById('grid-gizi-besar');
+            const gKecil = document.getElementById('grid-gizi-kecil');
+            const bBesar = document.getElementById('btn-porsi-besar');
+            const bKecil = document.getElementById('btn-porsi-kecil');
+            const sub = document.getElementById('gizi-porsi-subtitle');
+            if (!gBesar || !gKecil) return;
+
+            const isKecil = tipe === 'kecil';
+            gBesar.classList.toggle('hidden', isKecil);
+            gKecil.classList.toggle('hidden', !isKecil);
+
+            if (isKecil) {
+                bKecil.className = 'px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#5027EF] text-[#FFFFFF] shadow-sm transition cursor-pointer border-0';
+                bBesar.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold bg-transparent text-[#164863] hover:text-[#000000] transition cursor-pointer border-0';
+                if (sub) sub.innerHTML = 'Menampilkan takaran Porsi Kecil (&plusmn;{{ $menu->ukuran_porsi_kecil_gram ?: 300 }} g) &bull; Basis Rujukan 100g TKPI';
+            } else {
+                bBesar.className = 'px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#5027EF] text-[#FFFFFF] shadow-sm transition cursor-pointer border-0';
+                bKecil.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold bg-transparent text-[#164863] hover:text-[#000000] transition cursor-pointer border-0';
+                if (sub) sub.innerHTML = 'Menampilkan takaran Porsi Besar (&plusmn;{{ $menu->ukuran_porsi_besar_gram ?: $menu->ukuran_porsi_gram }} g) &bull; Basis Rujukan 100g TKPI';
+            }
+        }
+    </script>
+    @endif
 </body>
 </html>

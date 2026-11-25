@@ -123,11 +123,14 @@ class MbgNutriViewTest extends TestCase
     public function test_perhitungan_gizi_menu(): void
     {
         $menu = Menu::with('menuBahans.bahanBaku')->first();
-        $gizi = $menu->hitungGiziPerSajian();
+        $giziBesar = $menu->hitungGiziPerSajian('besar');
+        $giziKecil = $menu->hitungGiziPerSajian('kecil');
 
-        $this->assertArrayHasKey('energi_kkal', $gizi);
-        $this->assertArrayHasKey('protein_g', $gizi);
-        $this->assertGreaterThan(0, $gizi['energi_kkal']);
+        $this->assertArrayHasKey('energi_kkal', $giziBesar);
+        $this->assertArrayHasKey('protein_g', $giziBesar);
+        $this->assertGreaterThan(0, $giziBesar['energi_kkal']);
+        $this->assertGreaterThan(0, $giziKecil['energi_kkal']);
+        $this->assertGreaterThan($giziKecil['energi_kkal'], $giziBesar['energi_kkal']);
     }
 
     /**
@@ -249,12 +252,14 @@ class MbgNutriViewTest extends TestCase
         $this->actingAs($admin)->get(route('admin.jadwal.index'))->assertStatus(200);
         $this->actingAs($admin)->get(route('admin.tahap.index'))->assertStatus(200);
         $this->actingAs($admin)->get(route('admin.kpi.index'))->assertStatus(200);
+        $this->actingAs($admin)->get(route('admin.prediksi.index'))->assertStatus(200);
 
         // 3. Ahli Gizi Views
         $this->actingAs($gizi)->get(route('gizi.dashboard'))->assertStatus(200);
         $this->actingAs($gizi)->get(route('gizi.hitung.validasi'))->assertStatus(200);
         $this->actingAs($gizi)->get(route('gizi.menu.lihat'))->assertStatus(200);
         $this->actingAs($gizi)->get(route('gizi.kpi.lihat'))->assertStatus(200);
+        $this->actingAs($gizi)->get(route('gizi.prediksi.lihat'))->assertStatus(200);
     }
 
     /**
@@ -712,18 +717,60 @@ class MbgNutriViewTest extends TestCase
         $this->assertEquals('Tidak Layak', $kpi->kelas_prediksi);
         $this->assertStringContainsString('keputusan akhir', strtolower($kpi->keterangan_keputusan));
 
-        // Evaluasi titik distribusi pada KPI view mencakup label risiko dan sisa menit aman
+        // Evaluasi titik distribusi pada halaman Prediksi Risiko Random Forest mencakup label risiko dan sisa menit aman
         $this->actingAs($admin)
-            ->get(route('admin.kpi.index', ['menu_id' => $menu->id, 'batch_no' => 'Batch TH05']))
+            ->get(route('admin.prediksi.index', ['menu_id' => $menu->id, 'batch_no' => 'Batch TH05']))
             ->assertStatus(200)
             ->assertSee('Tidak Layak')
             ->assertSee('Risiko tinggi');
+
+        // Rekapitulasi KPI Mingguan (1x seminggu) berjalan terpisah pada halaman KPI Mingguan
+        $this->actingAs($admin)
+            ->post(route('admin.kpi.hitung'), ['week_start' => now()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString()])
+            ->assertStatus(302)
+            ->assertSessionHas('success');
+
+        $this->actingAs($admin)
+            ->get(route('admin.kpi.index'))
+            ->assertStatus(200)
+            ->assertSee('KPI Mingguan');
 
         // FR-027: Batch yang belum punya pengemasan selesai tidak memaksa skor KPI
         $this->assertNull(app(\App\Services\KpiService::class)->hitungKpi($menu, 'Batch Kosong'));
 
         // AuditLog mencatat aksi catat_tahap
         $this->assertTrue(\App\Models\AuditLog::where('action', 'catat_tahap')->exists());
+
+        // Verifikasi tombol cepat 1-klik (Mulai -> Selesai Sekarang) otomatis menghitung waktu & matang komponen
+        $this->actingAs($admin)->post(route('admin.tahap.quick'), [
+            'menu_id' => $menu->id,
+            'batch_no' => 'Batch Cepat 1Klik',
+            'tahap' => 'terima_bahan',
+            'aksi' => 'selesai',
+        ])->assertStatus(302)->assertSessionHas('success');
+
+        $this->actingAs($admin)->post(route('admin.tahap.quick'), [
+            'menu_id' => $menu->id,
+            'batch_no' => 'Batch Cepat 1Klik',
+            'tahap' => 'pengolahan',
+            'aksi' => 'mulai',
+        ])->assertStatus(302)->assertSessionHas('success');
+
+        $this->actingAs($admin)->post(route('admin.tahap.quick'), [
+            'menu_id' => $menu->id,
+            'batch_no' => 'Batch Cepat 1Klik',
+            'tahap' => 'pengolahan',
+            'aksi' => 'selesai',
+        ])->assertStatus(302)->assertSessionHas('success');
+
+        $alurCepatOlah = \App\Models\AlurOperasional::where('menu_id', $menu->id)
+            ->where('batch_no', 'Batch Cepat 1Klik')
+            ->where('tahap', 'pengolahan')
+            ->first();
+        $this->assertNotNull($alurCepatOlah);
+        $this->assertNotNull($alurCepatOlah->waktu_mulai_aktual);
+        $this->assertNotNull($alurCepatOlah->waktu_selesai_aktual);
+        $this->assertNotNull($alurCepatOlah->waktu_matang_terakhir);
     }
 
     /**

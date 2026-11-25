@@ -11,6 +11,7 @@ use App\Models\AlurOperasional;
 use App\Models\PengantaranTitik;
 use App\Models\KpiPrediksi;
 use App\Models\AuditLog;
+use App\Services\KpiService;
 use App\Services\PredictionService;
 use Carbon\Carbon;
 
@@ -114,28 +115,38 @@ class GiziController extends Controller
         }
 
         $hasilHitung = null;
+        $hasilHitungKecil = null;
         $rincianBahanGizi = [];
         $alurs = collect();
 
         if ($selectedMenu) {
-            $hasilHitung = $selectedMenu->hitungGiziPerSajian();
+            $hasilHitung = $selectedMenu->hitungGiziPerSajian('besar');
+            $hasilHitungKecil = $selectedMenu->hitungGiziPerSajian('kecil');
             $alurs = AlurOperasional::where('menu_id', $selectedMenu->id)->get()->keyBy('tahap');
+            $rasioKecil = ($selectedMenu->ukuran_porsi_besar_gram > 0)
+                ? ($selectedMenu->ukuran_porsi_kecil_gram / $selectedMenu->ukuran_porsi_besar_gram)
+                : 0.68;
 
             foreach ($selectedMenu->menuBahans as $mb) {
                 $namaBahan = $mb->bahanBaku?->nama_bahan ?? 'Bahan tidak diketahui';
                 $giziRef = DataGizi::where('nama_bahan', 'LIKE', '%' . $namaBahan . '%')->first();
-                $gram = (float) $mb->berat_per_sajian_gram;
+                $gram = (float) ($mb->berat_porsi_besar_gram > 0 ? $mb->berat_porsi_besar_gram : $mb->berat_per_sajian_gram);
                 if ($gram <= 0 && $selectedMenu->jumlah_porsi_rencana > 0) {
                     $gram = ($mb->jumlah_batch * 1000) / $selectedMenu->jumlah_porsi_rencana;
                 }
+                $gramKecil = (float) ($mb->berat_porsi_kecil_gram > 0 ? $mb->berat_porsi_kecil_gram : round($gram * $rasioKecil, 1));
+
                 $factor = $giziRef ? ($gram / ($giziRef->basis_berat_gram ?: 100)) : 0;
+                $factorKecil = $giziRef ? ($gramKecil / ($giziRef->basis_berat_gram ?: 100)) : 0;
 
                 $rincianBahanGizi[] = [
                     'menu_bahan' => $mb,
                     'nama_bahan' => $namaBahan,
                     'berat_sajian_gram' => round($gram, 1),
+                    'berat_kecil_gram' => round($gramKecil, 1),
                     'gizi_found' => (bool) $giziRef,
                     'energi_kkal' => $giziRef ? round($giziRef->energi_kkal * $factor, 1) : 0,
+                    'energi_kecil_kkal' => $giziRef ? round($giziRef->energi_kkal * $factorKecil, 1) : 0,
                     'protein_g' => $giziRef ? round($giziRef->protein_g * $factor, 1) : 0,
                     'lemak_g' => $giziRef ? round($giziRef->lemak_g * $factor, 1) : 0,
                     'karbohidrat_g' => $giziRef ? round($giziRef->karbohidrat_g * $factor, 1) : 0,
@@ -144,7 +155,7 @@ class GiziController extends Controller
             }
         }
 
-        // Acuan AKG anak sekolah / MBG per sajian makan siang (Permenkes No. 28/2019)
+        // Acuan AKG Porsi Besar (SD Kelas 4-6 / SMP / SMA) & Porsi Kecil (PAUD / TK / SD Kelas 1-3)
         $targetAkg = [
             'energi_min' => 550,
             'energi_max' => 700,
@@ -158,15 +169,30 @@ class GiziController extends Controller
             'serat_max' => 10,
         ];
 
+        $targetAkgKecil = [
+            'energi_min' => 380,
+            'energi_max' => 500,
+            'protein_min' => 12,
+            'protein_max' => 18,
+            'lemak_min' => 10,
+            'lemak_max' => 18,
+            'karbohidrat_min' => 50,
+            'karbohidrat_max' => 75,
+            'serat_min' => 4,
+            'serat_max' => 7,
+        ];
+
         $allGizi = DataGizi::all();
 
         return view('gizi.hitung_validasi', compact(
             'menus',
             'selectedMenu',
             'hasilHitung',
+            'hasilHitungKecil',
             'rincianBahanGizi',
             'alurs',
             'targetAkg',
+            'targetAkgKecil',
             'allGizi'
         ));
     }
@@ -260,16 +286,32 @@ class GiziController extends Controller
             $selectedMenu = $menus->first();
         }
 
-        $hasilHitung = $selectedMenu ? $selectedMenu->hitungGiziPerSajian() : null;
+        $hasilHitung = $selectedMenu ? $selectedMenu->hitungGiziPerSajian('besar') : null;
+        $hasilHitungKecil = $selectedMenu ? $selectedMenu->hitungGiziPerSajian('kecil') : null;
         $jadwalMenu = $selectedMenu
             ? \App\Models\JadwalProduksi::where('menu_id', $selectedMenu->id)->orderBy('waktu_mulai_rencana')->get()
             : collect();
 
-        return view('gizi.menu_lihat', compact('menus', 'selectedMenu', 'hasilHitung', 'jadwalMenu'));
+        return view('gizi.menu_lihat', compact('menus', 'selectedMenu', 'hasilHitung', 'hasilHitungKecil', 'jadwalMenu'));
     }
 
-    // --- KPI & PREDIKSI (HANYA BACA) ---
-    public function kpiPrediksi(Request $request, PredictionService $predictionService)
+    // --- KPI MINGGUAN (HANYA BACA - EVALUASI 1X SEMINGGU) ---
+    public function kpiMingguan(Request $request, KpiService $kpiService)
+    {
+        $daftarMinggu = $kpiService->daftarMingguEvaluasi();
+        $weekStart = $request->input('week_start', Carbon::today()->startOfWeek(Carbon::MONDAY)->toDateString());
+        $rekapMinggu = $kpiService->hitungRekapMingguan($weekStart, false);
+
+        $riwayatMingguan = [];
+        foreach (array_slice($daftarMinggu, 0, 6) as $wm) {
+            $riwayatMingguan[] = $kpiService->hitungRekapMingguan($wm['week_start'], false);
+        }
+
+        return view('gizi.kpi_lihat', compact('daftarMinggu', 'weekStart', 'rekapMinggu', 'riwayatMingguan'));
+    }
+
+    // --- PREDIKSI RISIKO RANDOM FOREST (HANYA BACA - TERPISAH DARI KPI) ---
+    public function prediksiRisiko(Request $request, PredictionService $predictionService)
     {
         $menus = Menu::orderBy('tanggal_penyajian', 'desc')->get();
         $activeMenu = $request->filled('menu_id')
@@ -277,11 +319,11 @@ class GiziController extends Controller
             : (Menu::whereDate('tanggal_penyajian', Carbon::today())->first() ?? Menu::latest()->first());
         $batchNo = $request->input('batch_no', 'Tahap 1');
 
-        $kpi = null;
+        $prediksi = null;
         $alurs = collect();
         $titikEvaluasi = [];
         if ($activeMenu) {
-            $kpi = KpiPrediksi::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->first();
+            $prediksi = KpiPrediksi::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->first();
             $alurs = AlurOperasional::where('menu_id', $activeMenu->id)->where('batch_no', $batchNo)->get()->keyBy('tahap');
 
             $alurOlah = $alurs->get('pengolahan');
@@ -297,10 +339,14 @@ class GiziController extends Controller
             }
         }
 
-        $kpiHistory = KpiPrediksi::with('menu')->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->get();
+        $prediksiHistory = KpiPrediksi::with('menu')
+            ->whereNotNull('kelas_prediksi')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
         $kurangData = !$alurs->has('pengemasan');
 
-        return view('gizi.kpi_lihat', compact('menus', 'activeMenu', 'batchNo', 'kpi', 'alurs', 'titikEvaluasi', 'kpiHistory', 'kurangData'));
+        return view('gizi.prediksi_lihat', compact('menus', 'activeMenu', 'batchNo', 'prediksi', 'alurs', 'titikEvaluasi', 'prediksiHistory', 'kurangData'));
     }
 }
 

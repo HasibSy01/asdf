@@ -24,7 +24,7 @@
             <div class="stat-label">Penerima batch Tahap 1</div>
             <div class="stat-value">{{ number_format($penerimaBatch1, 0, ',', '.') }}</div>
             <div class="stat-sub">
-                {{ $kelompokList->isNotEmpty() ? $kelompokList->map(fn($k) => trim(explode('/', $k->nama_kelompok)[0]) . ' ' . $k->jumlah_penerima)->implode(' + ') : 'Belum ada kelompok penerima' }}
+                Porsi Besar: {{ number_format($kelompokList->sum('penerima_porsi_besar'), 0, ',', '.') }} &bull; Porsi Kecil: {{ number_format($kelompokList->sum('penerima_porsi_kecil'), 0, ',', '.') }}
             </div>
         </div>
 
@@ -32,7 +32,7 @@
             <div class="stat-label">Porsi terkemas Tahap 1</div>
             <div class="stat-value">{{ number_format($porsiTerkemasBatch1, 0, ',', '.') }}</div>
             <div class="stat-sub">
-                {{ $kelompokList->isNotEmpty() ? $kelompokList->map(fn($k) => trim(explode('/', $k->nama_kelompok)[0]) . ' ' . $k->porsi_terkemas)->implode(' + ') : 'Belum ada pencatatan porsi' }}
+                Porsi Besar: {{ number_format($kelompokList->sum('terkemas_porsi_besar'), 0, ',', '.') }} &bull; Porsi Kecil: {{ number_format($kelompokList->sum('terkemas_porsi_kecil'), 0, ',', '.') }}
             </div>
         </div>
     </div>
@@ -46,9 +46,9 @@
 
         $badgeBatch = 'Belum mulai';
         if ($alurDist && $alurDist->waktu_selesai_aktual) {
-            $badgeBatch = 'Semua tahap selesai · KPI dihitung';
+            $badgeBatch = 'Semua tahap selesai';
         } elseif ($alurKemas && $alurKemas->waktu_selesai_aktual) {
-            $badgeBatch = 'Kemas selesai · Belum distribusi';
+            $badgeBatch = 'Kemas selesai · Prediksi aktif';
         } elseif ($alurOlah && $alurOlah->waktu_selesai_aktual) {
             $badgeBatch = 'Olah selesai · Menunggu kemas';
         } elseif ($alurTerima && $alurTerima->waktu_selesai_aktual) {
@@ -89,10 +89,10 @@
         </div>
 
         <p class="text-xs text-slate-400 mt-4 leading-relaxed">
-            @if($kpi && $alurDist && $alurDist->waktu_selesai_aktual)
-                Skor KPI aktif: <strong class="text-white">{{ number_format($kpi->skor_total, 1, ',', '.') }}% ({{ $kpi->kategori_kpi }})</strong> &bull; Prediksi risiko: <strong class="text-white">{{ $kpi->kelas_prediksi }}</strong> ({{ $kpi->probabilitas_risiko }}% risiko keterlambatan).
+            @if($kpi && $kpi->kelas_prediksi)
+                Prediksi risiko pra-distribusi: <strong class="text-white">{{ $kpi->kelas_prediksi }}</strong> ({{ $kpi->probabilitas_risiko }}% risiko keterlambatan). Evaluasi <strong>KPI Mingguan</strong> dilakukan terpisah 1 kali setiap minggu.
             @else
-                Prediksi dijalankan otomatis setelah tahap kemas selesai. KPI final diperbarui otomatis setelah tahap distribusi selesai dicatat.
+                Prediksi Random Forest dijalankan otomatis setelah tahap kemas selesai. Evaluasi KPI dilakukan terpisah cukup 1 kali seminggu pada menu KPI Mingguan.
             @endif
         </p>
     </div>
@@ -217,8 +217,11 @@
             <a href="{{ route('admin.jadwal.index') }}" class="btn btn-secondary">
                 Jadwal Produksi
             </a>
+            <a href="{{ route('admin.prediksi.index') }}" class="btn btn-secondary">
+                Prediksi Risiko
+            </a>
             <a href="{{ route('admin.kpi.index') }}" class="btn btn-secondary">
-                KPI / Prediksi &middot; baca
+                KPI Mingguan
             </a>
         </div>
 

@@ -119,8 +119,11 @@
                         <a href="{{ route('admin.tahap.index') }}" class="nav-item {{ request()->routeIs('admin.tahap.*') ? 'active' : '' }}">
                             Pencatatan Tahap
                         </a>
+                        <a href="{{ route('admin.prediksi.index') }}" class="nav-item {{ request()->routeIs('admin.prediksi.*') ? 'active' : '' }}">
+                            Prediksi Risiko
+                        </a>
                         <a href="{{ route('admin.kpi.index') }}" class="nav-item {{ request()->routeIs('admin.kpi.*') ? 'active' : '' }}">
-                            KPI dan Prediksi Risiko
+                            KPI Mingguan
                         </a>
                     @else
                         <a href="{{ route('gizi.dashboard') }}" class="nav-item {{ request()->routeIs('gizi.dashboard') ? 'active' : '' }}">
@@ -132,8 +135,11 @@
                         <a href="{{ route('gizi.menu.lihat') }}" class="nav-item {{ request()->routeIs('gizi.menu.lihat') ? 'active' : '' }}">
                             Menu dan Bahan (lihat)
                         </a>
+                        <a href="{{ route('gizi.prediksi.lihat') }}" class="nav-item {{ request()->routeIs('gizi.prediksi.lihat') ? 'active' : '' }}">
+                            Prediksi Risiko
+                        </a>
                         <a href="{{ route('gizi.kpi.lihat') }}" class="nav-item {{ request()->routeIs('gizi.kpi.lihat') ? 'active' : '' }}">
-                            KPI dan Prediksi Risiko
+                            KPI Mingguan
                         </a>
                     @endif
                 </nav>
@@ -216,7 +222,113 @@
         </main>
     </div>
 
+    <!-- Centered Custom Modal Popup -->
+    <div id="mbg-modal-backdrop" class="mbg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="mbg-modal-title" onclick="if(event.target === this) mbgCloseModal()">
+        <div class="mbg-modal-card">
+            <div id="mbg-modal-header" class="mbg-modal-header">
+                <div id="mbg-modal-icon" class="mbg-modal-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <div>
+                    <span id="mbg-modal-badge" class="mbg-modal-badge">Konfirmasi</span>
+                    <h3 id="mbg-modal-title" class="mbg-modal-title">Konfirmasi Tindakan</h3>
+                </div>
+            </div>
+            <div id="mbg-modal-body" class="mbg-modal-body"></div>
+            <div class="mbg-modal-footer">
+                <button type="button" id="mbg-modal-cancel" class="mbg-modal-btn mbg-modal-btn-cancel" onclick="mbgCloseModal()">
+                    Batal
+                </button>
+                <button type="button" id="mbg-modal-confirm" class="mbg-modal-btn mbg-modal-btn-confirm">
+                    Ya, Lanjutkan
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let mbgModalAction = null;
+
+        function mbgOpenModal(options) {
+            const backdrop = document.getElementById('mbg-modal-backdrop');
+            const badgeEl = document.getElementById('mbg-modal-badge');
+            const titleEl = document.getElementById('mbg-modal-title');
+            const bodyEl = document.getElementById('mbg-modal-body');
+            const cancelBtn = document.getElementById('mbg-modal-cancel');
+            const confirmBtn = document.getElementById('mbg-modal-confirm');
+            const iconEl = document.getElementById('mbg-modal-icon');
+            if (!backdrop) return;
+
+            const variant = options.variant || 'danger';
+            const isAlert = Boolean(options.isAlert);
+
+            badgeEl.textContent = options.badge || (variant === 'danger' ? 'Konfirmasi Hapus' : (isAlert ? 'Informasi' : 'Konfirmasi'));
+            titleEl.textContent = options.title || (variant === 'danger' ? 'Hapus Data Ini?' : (isAlert ? 'Pemberitahuan' : 'Konfirmasi Tindakan'));
+            bodyEl.textContent = options.message || '';
+
+            if (variant === 'danger') {
+                iconEl.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+            } else if (variant === 'success') {
+                iconEl.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+            } else {
+                iconEl.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            }
+
+            cancelBtn.style.display = isAlert ? 'none' : 'inline-flex';
+            cancelBtn.textContent = options.cancelText || 'Batal';
+            confirmBtn.textContent = options.confirmText || (isAlert ? 'Mengerti' : (variant === 'danger' ? 'Ya, Hapus' : 'Ya, Lanjutkan'));
+            confirmBtn.className = 'mbg-modal-btn ' + (variant === 'danger' && !isAlert ? 'mbg-modal-btn-danger' : 'mbg-modal-btn-confirm');
+
+            mbgModalAction = typeof options.onConfirm === 'function' ? options.onConfirm : null;
+            confirmBtn.onclick = function () {
+                const cb = mbgModalAction;
+                mbgCloseModal();
+                if (cb) cb();
+            };
+
+            backdrop.classList.add('open');
+            setTimeout(() => confirmBtn.focus(), 40);
+        }
+
+        function mbgCloseModal() {
+            const backdrop = document.getElementById('mbg-modal-backdrop');
+            if (backdrop) backdrop.classList.remove('open');
+            mbgModalAction = null;
+        }
+
+        function mbgConfirmForm(event, message, title, variant) {
+            const form = event.target;
+            if (form.dataset.mbgConfirmed === '1') {
+                form.dataset.mbgConfirmed = '';
+                return true;
+            }
+            event.preventDefault();
+            mbgOpenModal({
+                title: title || 'Hapus Data Ini?',
+                message: message,
+                variant: variant || 'danger',
+                onConfirm: function () {
+                    form.dataset.mbgConfirmed = '1';
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
+        function mbgAlert(message, title, variant) {
+            mbgOpenModal({
+                isAlert: true,
+                title: title || 'Pemberitahuan Sistem',
+                message: message,
+                variant: variant || 'info',
+                confirmText: 'Mengerti'
+            });
+        }
+
         function toggleSidebar(forceState) {
             const sidebar = document.getElementById('app-sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
@@ -234,7 +346,10 @@
             const btn = document.getElementById('mobile-menu-toggle');
             if (btn) btn.addEventListener('click', () => toggleSidebar());
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') toggleSidebar(false);
+                if (e.key === 'Escape') {
+                    mbgCloseModal();
+                    toggleSidebar(false);
+                }
             });
         });
     </script>

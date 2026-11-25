@@ -31,19 +31,18 @@
         <div class="bg-[#131f38] border border-[#1f3056] p-6 rounded-2xl">
             <div class="text-xs font-semibold text-slate-400">Total penerima batch terdaftar</div>
             <div class="text-4xl font-extrabold text-white mt-2">{{ number_format($totalPenerima, 0, ',', '.') }} penerima</div>
-            <div class="text-[11px] text-slate-400 mt-2">Akumulasi seluruh kelompok pengantaran aktif ({{ $kelompokList->count() }} titik)</div>
+            <div class="text-[11px] text-slate-400 mt-2">
+                Porsi Besar: <strong>{{ number_format($totalPenerimaBesar ?? 0, 0, ',', '.') }}</strong> &bull; Porsi Kecil: <strong>{{ number_format($totalPenerimaKecil ?? 0, 0, ',', '.') }}</strong>
+            </div>
         </div>
 
         <div class="bg-[#131f38] border border-[#1f3056] p-6 rounded-2xl">
             <div class="text-xs font-semibold text-slate-400">Total porsi terkemas</div>
             <div class="text-4xl font-extrabold text-white mt-2">{{ number_format($totalTerkemas, 0, ',', '.') }} porsi</div>
             <div class="text-[11px] {{ $selisihBatch > 0 ? 'text-amber-400 font-semibold' : 'text-emerald-400' }} mt-2">
+                Besar: {{ number_format($totalTerkemasBesar ?? 0, 0, ',', '.') }} &bull; Kecil: {{ number_format($totalTerkemasKecil ?? 0, 0, ',', '.') }}
                 @if($selisihBatch > 0)
-                    Selisih {{ $selisihBatch }} porsi kurang dari total penerima batch
-                @elseif($selisihBatch < 0)
-                    Cadangan berlebih {{ abs($selisihBatch) }} porsi dari target penerima
-                @else
-                    100% sesuai target penerima batch
+                    (Kurang {{ $selisihBatch }})
                 @endif
             </div>
         </div>
@@ -93,8 +92,8 @@
                         <tr class="bg-[#182645] text-slate-300 font-semibold border-b border-[#1f3056]">
                             <th class="py-3 px-4">Kelompok / titik antar</th>
                             <th class="py-3 px-4">Kategori</th>
-                            <th class="py-3 px-4">Penerima</th>
-                            <th class="py-3 px-4">Porsi terkemas</th>
+                            <th class="py-3 px-4">Penerima (Besar / Kecil)</th>
+                            <th class="py-3 px-4">Terkemas (Besar / Kecil)</th>
                             <th class="py-3 px-4">Estimasi tempuh</th>
                             <th class="py-3 px-4">Aksi</th>
                         </tr>
@@ -107,15 +106,21 @@
                                     <div class="text-[11px] text-slate-400 font-normal">{{ $kp->titik_antar }}</div>
                                 </td>
                                 <td class="py-3.5 px-4">{{ $kp->kategori }}</td>
-                                <td class="py-3.5 px-4 font-semibold text-white">{{ $kp->jumlah_penerima }}</td>
-                                <td class="py-3.5 px-4 {{ $kp->porsi_terkemas < $kp->jumlah_penerima ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold' }}">
-                                    {{ $kp->porsi_terkemas }}
+                                <td class="py-3.5 px-4">
+                                    <div class="font-semibold text-white">{{ $kp->jumlah_penerima }} penerima</div>
+                                    <div class="text-[11px] text-slate-400">Besar: {{ $kp->penerima_porsi_besar }} &bull; Kecil: {{ $kp->penerima_porsi_kecil }}</div>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <div class="{{ $kp->porsi_terkemas < $kp->jumlah_penerima ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold' }}">
+                                        {{ $kp->porsi_terkemas }} porsi
+                                    </div>
+                                    <div class="text-[11px] text-slate-400">Besar: {{ $kp->terkemas_porsi_besar }} &bull; Kecil: {{ $kp->terkemas_porsi_kecil }}</div>
                                 </td>
                                 <td class="py-3.5 px-4">{{ $kp->estimasi_waktu_tempuh_menit }} menit</td>
                                 <td class="py-3.5 px-4 text-xs space-x-1.5">
                                     <a href="#form-kelompok" onclick="fillKelompokEdit({{ json_encode($kp) }})" class="text-slate-300 hover:text-white transition underline">Ubah</a>
                                     <span class="text-slate-600">/</span>
-                                    <form method="POST" action="{{ route('admin.penerima.destroy', $kp->id) }}" class="inline" onsubmit="return confirm('Hapus kelompok {{ addslashes($kp->nama_kelompok) }}?')">
+                                    <form method="POST" action="{{ route('admin.penerima.destroy', $kp->id) }}" class="inline" onsubmit="return mbgConfirmForm(event, 'Hapus kelompok {{ addslashes($kp->nama_kelompok) }}?', 'Hapus Kelompok Penerima?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-rose-400 hover:text-rose-300 transition bg-transparent border-0 p-0 cursor-pointer">Hapus</button>
@@ -179,19 +184,29 @@
                        class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jumlah penerima *</label>
-                    <input type="number" min="1" name="jumlah_penerima" id="input-jml-penerima" value="{{ old('jumlah_penerima', 100) }}" required
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Penerima Porsi Besar *</label>
+                    <input type="number" min="0" name="penerima_porsi_besar" id="input-penerima-besar" value="{{ old('penerima_porsi_besar', 65) }}" required
                            class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Jumlah porsi terkemas *</label>
-                    <input type="number" min="0" name="porsi_terkemas" id="input-jml-terkemas" value="{{ old('porsi_terkemas', 100) }}" required
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Penerima Porsi Kecil *</label>
+                    <input type="number" min="0" name="penerima_porsi_kecil" id="input-penerima-kecil" value="{{ old('penerima_porsi_kecil', 35) }}" required
                            class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Estimasi waktu tempuh (menit) *</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Terkemas Porsi Besar *</label>
+                    <input type="number" min="0" name="terkemas_porsi_besar" id="input-terkemas-besar" value="{{ old('terkemas_porsi_besar', 65) }}" required
+                           class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Terkemas Porsi Kecil *</label>
+                    <input type="number" min="0" name="terkemas_porsi_kecil" id="input-terkemas-kecil" value="{{ old('terkemas_porsi_kecil', 35) }}" required
+                           class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Estimasi tempuh (mnt) *</label>
                     <input type="number" min="1" name="estimasi_waktu_tempuh_menit" id="input-estimasi" value="{{ old('estimasi_waktu_tempuh_menit', 20) }}" required
                            class="w-full px-3.5 py-2.5 bg-[#192748] border border-[#2a3d69] rounded-xl text-xs text-white focus:outline-none focus:border-blue-400">
                 </div>
@@ -240,8 +255,10 @@
         document.getElementById('input-nama-kelompok').value = item.nama_kelompok;
         document.getElementById('input-kategori-kelompok').value = item.kategori || 'Siswa';
         document.getElementById('input-titik-antar').value = item.titik_antar;
-        document.getElementById('input-jml-penerima').value = item.jumlah_penerima;
-        document.getElementById('input-jml-terkemas').value = item.porsi_terkemas;
+        document.getElementById('input-penerima-besar').value = item.penerima_porsi_besar ?? item.jumlah_penerima ?? 0;
+        document.getElementById('input-penerima-kecil').value = item.penerima_porsi_kecil ?? 0;
+        document.getElementById('input-terkemas-besar').value = item.terkemas_porsi_besar ?? item.porsi_terkemas ?? 0;
+        document.getElementById('input-terkemas-kecil').value = item.terkemas_porsi_kecil ?? 0;
         document.getElementById('input-estimasi').value = item.estimasi_waktu_tempuh_menit;
 
         document.getElementById('kelompok-form').action = '/admin/penerima-porsi/' + item.id + '/update';
@@ -257,17 +274,22 @@
     function confirmDeleteKelompok() {
         let id = document.getElementById('kelompok-id').value;
         if (!id) {
-            alert('Pilih kelompok terlebih dahulu dari daftar untuk menghapus.');
+            mbgAlert('Pilih kelompok terlebih dahulu dari daftar untuk menghapus.', 'Kelompok Belum Dipilih');
             return;
         }
-        if (confirm('Hapus kelompok ini? Kelompok yang terhubung jadwal harus diperiksa dahulu.')) {
-            let f = document.createElement('form');
-            f.method = 'POST';
-            f.action = '/admin/penerima-porsi/' + id;
-            f.innerHTML = `@csrf @method('DELETE')`;
-            document.body.appendChild(f);
-            f.submit();
-        }
+        mbgOpenModal({
+            title: 'Hapus Kelompok Penerima?',
+            message: 'Hapus kelompok ini? Kelompok yang terhubung jadwal harus diperiksa dahulu.',
+            variant: 'danger',
+            onConfirm: function () {
+                let f = document.createElement('form');
+                f.method = 'POST';
+                f.action = '/admin/penerima-porsi/' + id;
+                f.innerHTML = `@csrf @method('DELETE')`;
+                document.body.appendChild(f);
+                f.submit();
+            }
+        });
     }
 </script>
 @endsection

@@ -150,13 +150,17 @@ class DatabaseSeeder extends Seeder
             DataGizi::updateOrCreate(['nama_bahan' => $dg['nama_bahan']], $dg);
         }
 
-        // 3. Kelompok Penerima (Agregat)
+        // 3. Kelompok Penerima (Agregat Porsi Besar & Porsi Kecil)
         $sdA = KelompokPenerima::updateOrCreate(
             ['nama_kelompok' => 'SD A / Gerbang sekolah'],
             [
                 'kategori' => 'Siswa',
                 'jumlah_penerima' => 100,
+                'penerima_porsi_besar' => 60,
+                'penerima_porsi_kecil' => 40,
                 'porsi_terkemas' => 100,
+                'terkemas_porsi_besar' => 60,
+                'terkemas_porsi_kecil' => 40,
                 'titik_antar' => 'Gerbang SD Negeri A, Kota Parepare',
                 'estimasi_waktu_tempuh_menit' => 15,
             ]
@@ -167,7 +171,11 @@ class DatabaseSeeder extends Seeder
             [
                 'kategori' => 'Siswa',
                 'jumlah_penerima' => 200,
+                'penerima_porsi_besar' => 130,
+                'penerima_porsi_kecil' => 70,
                 'porsi_terkemas' => 180,
+                'terkemas_porsi_besar' => 120,
+                'terkemas_porsi_kecil' => 60,
                 'titik_antar' => 'Halaman SD Negeri B, Kota Parepare',
                 'estimasi_waktu_tempuh_menit' => 30,
             ]
@@ -278,20 +286,24 @@ class DatabaseSeeder extends Seeder
                 'tanggal_penyajian' => Carbon::today(),
                 'jenis_makanan' => 'Makanan lengkap',
                 'ukuran_porsi_gram' => 450,
+                'ukuran_porsi_besar_gram' => 450,
+                'ukuran_porsi_kecil_gram' => 300,
                 'jumlah_porsi_rencana' => 300,
+                'porsi_besar_rencana' => 190,
+                'porsi_kecil_rencana' => 110,
                 'status' => 'terpublikasi',
                 'is_published' => true,
                 'kelompok_penerima_id' => $sdA->id,
             ]
         );
 
-        // Komposisi bahan menu utama
+        // Komposisi bahan menu utama (Porsi Besar & Porsi Kecil)
         $komposisi = [
-            ['kode_lot' => 'R-01', 'jumlah_batch' => 24.0, 'satuan' => 'kg', 'komponen' => 'Nasi', 'berat_per_sajian_gram' => 80.0],
-            ['kode_lot' => 'A-01', 'jumlah_batch' => 15.0, 'satuan' => 'kg', 'komponen' => 'Lauk utama', 'berat_per_sajian_gram' => 50.0],
-            ['kode_lot' => 'T-01', 'jumlah_batch' => 12.0, 'satuan' => 'kg', 'komponen' => 'Lauk nabati', 'berat_per_sajian_gram' => 40.0],
-            ['kode_lot' => 'B-01', 'jumlah_batch' => 15.0, 'satuan' => 'kg', 'komponen' => 'Sayur', 'berat_per_sajian_gram' => 50.0],
-            ['kode_lot' => 'P-01', 'jumlah_batch' => 18.0, 'satuan' => 'kg', 'komponen' => 'Buah', 'berat_per_sajian_gram' => 60.0],
+            ['kode_lot' => 'R-01', 'jumlah_batch' => 24.0, 'satuan' => 'kg', 'komponen' => 'Nasi', 'berat_per_sajian_gram' => 80.0, 'kecil' => 55.0],
+            ['kode_lot' => 'A-01', 'jumlah_batch' => 15.0, 'satuan' => 'kg', 'komponen' => 'Lauk utama', 'berat_per_sajian_gram' => 50.0, 'kecil' => 35.0],
+            ['kode_lot' => 'T-01', 'jumlah_batch' => 12.0, 'satuan' => 'kg', 'komponen' => 'Lauk nabati', 'berat_per_sajian_gram' => 40.0, 'kecil' => 30.0],
+            ['kode_lot' => 'B-01', 'jumlah_batch' => 15.0, 'satuan' => 'kg', 'komponen' => 'Sayur', 'berat_per_sajian_gram' => 50.0, 'kecil' => 35.0],
+            ['kode_lot' => 'P-01', 'jumlah_batch' => 18.0, 'satuan' => 'kg', 'komponen' => 'Buah', 'berat_per_sajian_gram' => 60.0, 'kecil' => 45.0],
         ];
 
         foreach ($komposisi as $komp) {
@@ -306,6 +318,8 @@ class DatabaseSeeder extends Seeder
                         'satuan' => $komp['satuan'],
                         'komponen' => $komp['komponen'],
                         'berat_per_sajian_gram' => $komp['berat_per_sajian_gram'],
+                        'berat_porsi_besar_gram' => $komp['berat_per_sajian_gram'],
+                        'berat_porsi_kecil_gram' => $komp['kecil'],
                     ]
                 );
             }

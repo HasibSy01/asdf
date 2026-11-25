@@ -110,7 +110,7 @@
                                 <div class="text-[11px] space-x-1.5">
                                     <a href="#form-jadwal" onclick="fillJadwalEdit({{ json_encode($j) }})" class="text-slate-300 hover:text-white underline">Ubah</a>
                                     <span class="text-slate-600">/</span>
-                                    <form method="POST" action="{{ route('admin.jadwal.destroy', $j->id) }}" class="inline" onsubmit="return confirm('Hapus baris jadwal {{ addslashes($j->tahap) }}?')">
+                                    <form method="POST" action="{{ route('admin.jadwal.destroy', $j->id) }}" class="inline" onsubmit="return mbgConfirmForm(event, 'Hapus baris jadwal {{ addslashes($j->tahap) }}?', 'Hapus Jadwal Produksi?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-rose-400 hover:text-rose-300 bg-transparent border-0 p-0 cursor-pointer">Hapus</button>

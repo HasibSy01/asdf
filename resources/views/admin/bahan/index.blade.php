@@ -104,7 +104,7 @@
                                 <div class="text-[11px] mt-0.5 space-x-1.5">
                                     <a href="#form-bahan" onclick="fillBahanEdit({{ json_encode($b) }})" class="text-slate-400 hover:text-white transition">Ubah</a>
                                     <span class="text-slate-600">/</span>
-                                    <form method="POST" action="{{ route('admin.bahan.destroy', $b->id) }}" class="inline" onsubmit="return confirm('Hapus bahan {{ addslashes($b->nama_bahan) }}? Bahan terkait menu tetap akan diperiksa.')">
+                                    <form method="POST" action="{{ route('admin.bahan.destroy', $b->id) }}" class="inline" onsubmit="return mbgConfirmForm(event, 'Hapus bahan {{ addslashes($b->nama_bahan) }}? Bahan terkait menu tetap akan diperiksa.', 'Hapus Bahan Baku?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-slate-400 hover:text-rose-400 transition bg-transparent border-0 p-0 cursor-pointer">Hapus</button>
@@ -304,17 +304,22 @@
     function confirmDeleteBahan() {
         let id = document.getElementById('edit-id').value;
         if (!id) {
-            alert('Pilih bahan terlebih dahulu dari daftar untuk menghapus.');
+            mbgAlert('Pilih bahan terlebih dahulu dari daftar untuk menghapus.', 'Bahan Belum Dipilih');
             return;
         }
-        if (confirm('Hapus bahan ini? Bahan yang terkait menu atau riwayat pemakaian tidak dihapus tanpa pemeriksaan.')) {
-            let f = document.createElement('form');
-            f.method = 'POST';
-            f.action = '/admin/bahan-baku/' + id;
-            f.innerHTML = `@csrf @method('DELETE')`;
-            document.body.appendChild(f);
-            f.submit();
-        }
+        mbgOpenModal({
+            title: 'Hapus Bahan Baku?',
+            message: 'Hapus bahan ini? Bahan yang terkait menu atau riwayat pemakaian tidak dihapus tanpa pemeriksaan.',
+            variant: 'danger',
+            onConfirm: function () {
+                let f = document.createElement('form');
+                f.method = 'POST';
+                f.action = '/admin/bahan-baku/' + id;
+                f.innerHTML = `@csrf @method('DELETE')`;
+                document.body.appendChild(f);
+                f.submit();
+            }
+        });
     }
 </script>
 @endsection

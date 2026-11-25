@@ -50,9 +50,10 @@
     <!-- Card 1: Bahan dan nilai gizi per sajian -->
     <div class="bg-[#131f38] border border-[#1f3056] p-6 rounded-2xl space-y-4">
         <div>
-            <h2 class="text-sm font-bold text-white">Bahan dan nilai gizi per sajian &middot; {{ $selectedMenu->nama_menu }}</h2>
+            <h2 class="text-sm font-bold text-white">Bahan dan nilai gizi (Porsi Besar &amp; Porsi Kecil) &middot; {{ $selectedMenu->nama_menu }}</h2>
             <p class="text-xs text-slate-400 mt-0.5">
-                {{ $selectedMenu->jumlah_porsi_rencana }} sajian rencana &middot; ukuran saji &plusmn;{{ $selectedMenu->ukuran_porsi_gram }} g. Komposisi batch dikelola Admin; nilai gizi dihitung otomatis dari Master Data Gizi.
+                Porsi Besar: {{ $selectedMenu->porsi_besar_rencana }} sajian (&plusmn;{{ $selectedMenu->ukuran_porsi_besar_gram ?: $selectedMenu->ukuran_porsi_gram }} g) &bull;
+                Porsi Kecil: {{ $selectedMenu->porsi_kecil_rencana }} sajian (&plusmn;{{ $selectedMenu->ukuran_porsi_kecil_gram ?: 300 }} g).
             </p>
         </div>
 
@@ -60,11 +61,11 @@
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
                     <tr class="bg-[#182645] text-slate-300 font-semibold border-b border-[#1f3056]">
-                        <th class="py-3 px-4">Komponen &middot; Berat saji</th>
-                        <th class="py-3 px-4">Bahan batch</th>
-                        <th class="py-3 px-4">Energi (kkal)</th>
-                        <th class="py-3 px-4">Protein / lemak (g)</th>
-                        <th class="py-3 px-4">Karbo / serat (g)</th>
+                        <th class="py-3 px-4">Komponen &amp; Bahan</th>
+                        <th class="py-3 px-4">Gramasi Besar / Kecil</th>
+                        <th class="py-3 px-4">Energi Besar / Kecil</th>
+                        <th class="py-3 px-4">Protein / lemak (Besar)</th>
+                        <th class="py-3 px-4">Karbo / serat (Besar)</th>
                         <th class="py-3 px-4">Status rujukan</th>
                     </tr>
                 </thead>
@@ -72,12 +73,15 @@
                     @forelse($rincianBahanGizi as $row)
                         <tr class="hover:bg-[#182747]/40">
                             <td class="py-3.5 px-4 font-semibold text-white">
-                                {{ $row['menu_bahan']->komponen ?: $row['nama_bahan'] }} &middot; {{ $row['berat_sajian_gram'] }} g
+                                {{ $row['menu_bahan']->komponen ?: $row['nama_bahan'] }}
+                                <div class="text-[11px] font-normal text-slate-400">{{ $row['nama_bahan'] }} ({{ $row['menu_bahan']->jumlah_batch }} {{ $row['menu_bahan']->satuan }})</div>
                             </td>
-                            <td class="py-3.5 px-4">
-                                {{ $row['nama_bahan'] }} ({{ $row['menu_bahan']->jumlah_batch }} {{ $row['menu_bahan']->satuan }})
+                            <td class="py-3.5 px-4 font-mono">
+                                {{ $row['berat_sajian_gram'] }} g / {{ $row['berat_kecil_gram'] }} g
                             </td>
-                            <td class="py-3.5 px-4 font-semibold text-white">{{ number_format($row['energi_kkal'], 1) }}</td>
+                            <td class="py-3.5 px-4 font-semibold text-white">
+                                {{ number_format($row['energi_kkal'], 1) }} / {{ number_format($row['energi_kecil_kkal'], 1) }} kkal
+                            </td>
                             <td class="py-3.5 px-4">{{ number_format($row['protein_g'], 1) }} / {{ number_format($row['lemak_g'], 1) }}</td>
                             <td class="py-3.5 px-4">{{ number_format($row['karbohidrat_g'], 1) }} / {{ number_format($row['serat_g'], 1) }}</td>
                             <td class="py-3.5 px-4 text-xs">
@@ -95,13 +99,25 @@
                     @endforelse
                     @if($hasilHitung)
                         <tr class="bg-[#182645] font-bold border-t border-[#1f3056]">
-                            <td class="py-3.5 px-4 text-white">Total per sajian</td>
-                            <td class="py-3.5 px-4 text-white">&plusmn;{{ $selectedMenu->ukuran_porsi_gram }} g</td>
-                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['energi_kkal'], 1) }}</td>
-                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['protein_g'], 1) }} / {{ number_format($hasilHitung['lemak_g'], 1) }}</td>
-                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['karbohidrat_g'], 1) }} / {{ number_format($hasilHitung['serat_g'], 1) }}</td>
+                            <td class="py-3.5 px-4 text-white">Total Porsi Besar</td>
+                            <td class="py-3.5 px-4 text-white">&plusmn;{{ $selectedMenu->ukuran_porsi_besar_gram ?: $selectedMenu->ukuran_porsi_gram }} g</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['energi_kkal'], 1) }} kkal</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['protein_g'], 1) }} / {{ number_format($hasilHitung['lemak_g'], 1) }} g</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitung['karbohidrat_g'], 1) }} / {{ number_format($hasilHitung['serat_g'], 1) }} g</td>
                             <td class="py-3.5 px-4 {{ $hasilHitung['is_complete'] ? 'text-emerald-400' : 'text-amber-400' }} font-semibold">
                                 {{ $hasilHitung['is_complete'] ? 'Lengkap' : 'Data kurang' }}
+                            </td>
+                        </tr>
+                    @endif
+                    @if(!empty($hasilHitungKecil))
+                        <tr class="bg-[#182645] font-bold border-t border-[#1f3056]">
+                            <td class="py-3.5 px-4 text-white">Total Porsi Kecil</td>
+                            <td class="py-3.5 px-4 text-white">&plusmn;{{ $selectedMenu->ukuran_porsi_kecil_gram ?: 300 }} g</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitungKecil['energi_kkal'], 1) }} kkal</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitungKecil['protein_g'], 1) }} / {{ number_format($hasilHitungKecil['lemak_g'], 1) }} g</td>
+                            <td class="py-3.5 px-4 text-white">{{ number_format($hasilHitungKecil['karbohidrat_g'], 1) }} / {{ number_format($hasilHitungKecil['serat_g'], 1) }} g</td>
+                            <td class="py-3.5 px-4 {{ $hasilHitungKecil['is_complete'] ? 'text-emerald-400' : 'text-amber-400' }} font-semibold">
+                                {{ $hasilHitungKecil['is_complete'] ? 'Lengkap' : 'Data kurang' }}
                             </td>
                         </tr>
                     @endif
@@ -312,11 +328,18 @@
 
 <script>
     function submitRevisi() {
-        if (confirm('Minta revisi komposisi bahan menu ke Admin SPPG?')) {
-            let f = document.getElementById('form-validasi');
-            document.getElementById('validasi-status').value = 'revisi';
-            f.submit();
-        }
+        mbgOpenModal({
+            badge: 'Konfirmasi Revisi',
+            title: 'Minta Revisi Komposisi?',
+            message: 'Minta revisi komposisi bahan menu ke Admin SPPG?',
+            variant: 'confirm',
+            confirmText: 'Ya, Minta Revisi',
+            onConfirm: function () {
+                let f = document.getElementById('form-validasi');
+                document.getElementById('validasi-status').value = 'revisi';
+                f.submit();
+            }
+        });
     }
 
     function copyShareLink() {
@@ -324,7 +347,14 @@
         if (!inp) return;
         inp.select();
         navigator.clipboard?.writeText(inp.value);
-        alert('Tautan QR portal publik disalin:\n' + inp.value);
+        mbgOpenModal({
+            isAlert: true,
+            badge: 'Tautan Tersalin',
+            title: 'Berhasil Menyalin Tautan',
+            message: 'Tautan QR portal publik disalin: ' + inp.value,
+            variant: 'success',
+            confirmText: 'Selesai'
+        });
     }
 </script>
 @endsection

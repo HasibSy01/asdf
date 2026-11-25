@@ -14,6 +14,8 @@ class PengantaranTitik extends Model
         'kelompok_penerima_id',
         'petugas_antar',
         'porsi_dikirim',
+        'porsi_besar_dikirim',
+        'porsi_kecil_dikirim',
         'waktu_berangkat_aktual',
         'waktu_tiba_aktual',
         'petugas_penerima',
@@ -24,6 +26,8 @@ class PengantaranTitik extends Model
         'waktu_berangkat_aktual' => 'datetime',
         'waktu_tiba_aktual' => 'datetime',
         'porsi_dikirim' => 'integer',
+        'porsi_besar_dikirim' => 'integer',
+        'porsi_kecil_dikirim' => 'integer',
     ];
 
     public function alurOperasional()

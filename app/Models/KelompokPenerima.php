@@ -13,7 +13,11 @@ class KelompokPenerima extends Model
         'nama_kelompok',
         'kategori',
         'jumlah_penerima',
+        'penerima_porsi_besar',
+        'penerima_porsi_kecil',
         'porsi_terkemas',
+        'terkemas_porsi_besar',
+        'terkemas_porsi_kecil',
         'titik_antar',
         'estimasi_waktu_tempuh_menit',
     ];

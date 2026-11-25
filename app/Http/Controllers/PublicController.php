@@ -29,14 +29,16 @@ class PublicController extends Controller
         $alurs = [];
         $jadwals = [];
         $hasilGizi = null;
+        $hasilGiziKecil = null;
 
         if ($menu) {
             $alurs = AlurOperasional::where('menu_id', $menu->id)->get()->keyBy('tahap');
             $jadwals = JadwalProduksi::where('menu_id', $menu->id)->orderBy('waktu_mulai_rencana')->get();
-            $hasilGizi = $menu->hitungGiziPerSajian();
+            $hasilGizi = $menu->hitungGiziPerSajian('besar');
+            $hasilGiziKecil = $menu->hitungGiziPerSajian('kecil');
         }
 
-        return view('public.index', compact('menu', 'publishedMenus', 'alurs', 'jadwals', 'hasilGizi'));
+        return view('public.index', compact('menu', 'publishedMenus', 'alurs', 'jadwals', 'hasilGizi', 'hasilGiziKecil'));
     }
 
     public function alurOperasional(Request $request)

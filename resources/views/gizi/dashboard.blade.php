@@ -146,7 +146,7 @@
                                 <div class="mt-0.5 space-x-1.5">
                                     <a href="#form-gizi" onclick="fillGiziEdit({{ json_encode($dg) }})" class="text-sky-300 hover:text-white underline">Ubah</a>
                                     <span class="text-slate-600">/</span>
-                                    <form method="POST" action="{{ route('gizi.data.destroy', $dg->id) }}" class="inline" onsubmit="return confirm('Hapus data gizi {{ addslashes($dg->nama_bahan) }}?')">
+                                    <form method="POST" action="{{ route('gizi.data.destroy', $dg->id) }}" class="inline" onsubmit="return mbgConfirmForm(event, 'Hapus data gizi {{ addslashes($dg->nama_bahan) }}?', 'Hapus Master Data Gizi?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-rose-400 hover:text-rose-300 bg-transparent border-0 p-0 cursor-pointer">Hapus</button>
@@ -271,15 +271,18 @@
                 </div>
             </div>
 
-            <!-- Card 2: KPI / Prediksi · hanya lihat -->
+            <!-- Card 2: Prediksi Risiko & KPI Mingguan · hanya lihat -->
             <div class="bg-[#131f38] border border-[#1f3056] p-5 rounded-2xl space-y-3">
-                <h3 class="text-xs font-bold text-white">KPI / Prediksi &middot; hanya lihat</h3>
+                <h3 class="text-xs font-bold text-white">Prediksi Risiko &amp; KPI Mingguan &middot; hanya lihat</h3>
                 <p class="text-[11px] text-slate-300 leading-relaxed">
-                    Pantau skor 7 indikator KPI dan hasil prediksi kelayakan konsumsi Random Forest per titik antar tanpa mengubah data operasional.
+                    Pantau prediksi kelayakan konsumsi Random Forest pra-distribusi per titik antar, serta rekapitulasi 7 indikator KPI Mingguan (1x seminggu) secara terpisah.
                 </p>
-                <div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('gizi.prediksi.lihat') }}" class="inline-block px-4 py-2 bg-[#192748] hover:bg-[#20335e] border border-[#2a3d69] text-xs font-semibold rounded-xl text-white transition">
+                        Prediksi Risiko
+                    </a>
                     <a href="{{ route('gizi.kpi.lihat') }}" class="inline-block px-4 py-2 bg-[#192748] hover:bg-[#20335e] border border-[#2a3d69] text-xs font-semibold rounded-xl text-white transition">
-                        Lihat KPI dan Prediksi
+                        KPI Mingguan
                     </a>
                 </div>
             </div>
